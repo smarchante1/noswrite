@@ -4,15 +4,15 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Plus, 
-  Trash2, 
-  ChevronRight, 
-  ChevronDown, 
-  User, 
-  MessageSquare, 
-  Layout, 
-  BookOpen, 
+import {
+  Plus,
+  Trash2,
+  ChevronRight,
+  ChevronDown,
+  User,
+  MessageSquare,
+  Layout,
+  BookOpen,
   FileText,
   Save,
   Download,
@@ -22,19 +22,19 @@ import {
   Users,
   Settings,
   Sparkles,
-  ArrowRight
+  ArrowRight,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Chapter, 
-  Act, 
-  Beat, 
-  Character, 
-  Dialogue, 
-  Page, 
+import {
+  Chapter,
+  Act,
+  Beat,
+  Character,
+  Dialogue,
+  Page,
   Panel,
   Location,
-  Bubble
+  Bubble,
 } from './types';
 
 const CHARACTER_PALETTE = [
@@ -55,12 +55,17 @@ const INITIAL_CHAPTER: Chapter = {
   title: 'Untitled Chapter',
   acts: [
     { id: 'act-1', title: 'Act I: Setup', beats: [], characterIds: [] },
-    { id: 'act-2', title: 'Act II: Confrontation', beats: [], characterIds: [] },
+    {
+      id: 'act-2',
+      title: 'Act II: Confrontation',
+      beats: [],
+      characterIds: [],
+    },
     { id: 'act-3', title: 'Act III: Resolution', beats: [], characterIds: [] },
   ],
   pages: [],
   characters: [],
-  locations: []
+  locations: [],
 };
 
 // --- CHARACTER COLOR PICKER COMPONENT ---
@@ -71,36 +76,40 @@ interface CharacterColorPickerProps {
   onSelect: (color: string) => void;
 }
 
-function CharacterColorPicker({ char, isOpen, onToggle, onSelect }: CharacterColorPickerProps) {
+function CharacterColorPicker({
+  char,
+  isOpen,
+  onToggle,
+  onSelect,
+}: CharacterColorPickerProps) {
   return (
     <div className="relative shrink-0">
-      <button 
+      <button
         onClick={onToggle}
-        className="w-4 h-4 rounded-full border border-yot-accent shadow-sm transition-transform hover:scale-110" 
-        style={{ backgroundColor: char.color }} 
+        className="w-4 h-4 rounded-full border border-yot-accent shadow-sm transition-transform hover:scale-110"
+        style={{ backgroundColor: char.color }}
       />
-      
+
       <AnimatePresence>
         {isOpen && (
           <>
             {/* Backdrop to close on click outside */}
-            <div 
-              className="fixed inset-0 z-40" 
-              onClick={onToggle}
-            />
-            <motion.div 
+            <div className="fixed inset-0 z-40" onClick={onToggle} />
+            <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 5 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 5 }}
               className="absolute left-0 top-6 z-50 p-2 bg-white rounded-xl border border-yot-accent shadow-xl w-32"
             >
               <div className="grid grid-cols-5 gap-1.5">
-                {CHARACTER_PALETTE.map(color => (
+                {CHARACTER_PALETTE.map((color) => (
                   <button
                     key={color}
                     onClick={() => onSelect(color)}
                     className={`w-4 h-4 rounded-full border transition-all hover:scale-110 ${
-                      char.color === color ? 'border-yot-dark ring-2 ring-yot-dark/20 scale-110' : 'border-transparent'
+                      char.color === color
+                        ? 'border-yot-dark ring-2 ring-yot-dark/20 scale-110'
+                        : 'border-transparent'
                     }`}
                     style={{ backgroundColor: color }}
                   />
@@ -121,15 +130,29 @@ interface StoryboardBubbleProps {
   panelId: string;
   bubble: Bubble;
   chapter: Chapter;
-  updateBubble: (pageId: string, panelId: string, bubbleId: string, updates: Partial<Bubble>) => void;
+  updateBubble: (
+    pageId: string,
+    panelId: string,
+    bubbleId: string,
+    updates: Partial<Bubble>,
+  ) => void;
   deleteBubble: (pageId: string, panelId: string, bubbleId: string) => void;
 }
 
-function StoryboardBubble({ pageId, panelId, bubble, chapter, updateBubble, deleteBubble }: StoryboardBubbleProps) {
+function StoryboardBubble({
+  pageId,
+  panelId,
+  bubble,
+  chapter,
+  updateBubble,
+  deleteBubble,
+}: StoryboardBubbleProps) {
   const startDragging = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const parent = (e.currentTarget as HTMLElement).closest('.manga-panel-content');
+    const parent = (e.currentTarget as HTMLElement).closest(
+      '.manga-panel-content',
+    );
     if (!parent) return;
     const rect = parent.getBoundingClientRect();
     const startX = e.pageX;
@@ -140,9 +163,9 @@ function StoryboardBubble({ pageId, panelId, bubble, chapter, updateBubble, dele
     const onMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = ((moveEvent.pageX - startX) / rect.width) * 100;
       const deltaY = ((moveEvent.pageY - startY) / rect.height) * 100;
-      updateBubble(pageId, panelId, bubble.id, { 
+      updateBubble(pageId, panelId, bubble.id, {
         x: Math.max(0, Math.min(100 - bubble.w, initialX + deltaX)),
-        y: Math.max(0, Math.min(100 - bubble.h, initialY + deltaY))
+        y: Math.max(0, Math.min(100 - bubble.h, initialY + deltaY)),
       });
     };
     const onMouseUp = () => {
@@ -156,7 +179,9 @@ function StoryboardBubble({ pageId, panelId, bubble, chapter, updateBubble, dele
   const startResizing = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const parent = (e.currentTarget as HTMLElement).closest('.manga-panel-content');
+    const parent = (e.currentTarget as HTMLElement).closest(
+      '.manga-panel-content',
+    );
     if (!parent) return;
     const rect = parent.getBoundingClientRect();
     const startX = e.pageX;
@@ -167,9 +192,9 @@ function StoryboardBubble({ pageId, panelId, bubble, chapter, updateBubble, dele
     const onMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = ((moveEvent.pageX - startX) / rect.width) * 100;
       const deltaY = ((moveEvent.pageY - startY) / rect.height) * 100;
-      updateBubble(pageId, panelId, bubble.id, { 
+      updateBubble(pageId, panelId, bubble.id, {
         w: Math.max(10, Math.min(100 - bubble.x, initialW + deltaX)),
-        h: Math.max(10, Math.min(100 - bubble.y, initialH + deltaY))
+        h: Math.max(10, Math.min(100 - bubble.y, initialH + deltaY)),
       });
     };
     const onMouseUp = () => {
@@ -180,18 +205,23 @@ function StoryboardBubble({ pageId, panelId, bubble, chapter, updateBubble, dele
     window.addEventListener('mouseup', onMouseUp);
   };
 
-  const dialogue = chapter.acts.flatMap(a => a.beats).flatMap(b => b.dialogue).find(d => d.id === bubble.dialogueId);
-  const character = dialogue ? chapter.characters.find(c => c.id === dialogue.characterId) : null;
+  const dialogue = chapter.acts
+    .flatMap((a) => a.beats)
+    .flatMap((b) => b.dialogue)
+    .find((d) => d.id === bubble.dialogueId);
+  const character = dialogue
+    ? chapter.characters.find((c) => c.id === dialogue.characterId)
+    : null;
 
   return (
-    <div 
+    <div
       className="absolute group cursor-move"
-      style={{ 
+      style={{
         left: `${bubble.x}%`,
         top: `${bubble.y}%`,
         width: `${bubble.w}%`,
         height: `${bubble.h}%`,
-        zIndex: 100
+        zIndex: 100,
       }}
       onMouseDown={startDragging}
     >
@@ -203,34 +233,48 @@ function StoryboardBubble({ pageId, panelId, bubble, chapter, updateBubble, dele
               {character?.name || 'Unknown'}
             </p>
           )}
-          <select 
+          <select
             value={bubble.dialogueId}
-            onChange={(e) => updateBubble(pageId, panelId, bubble.id, { dialogueId: e.target.value })}
+            onChange={(e) =>
+              updateBubble(pageId, panelId, bubble.id, {
+                dialogueId: e.target.value,
+              })
+            }
             onMouseDown={(e) => e.stopPropagation()}
             className="w-full bg-transparent border-none outline-none text-[11px] font-medium text-yot-dark text-center leading-tight appearance-none cursor-pointer"
           >
             <option value="">Select Dialogue</option>
-            {chapter.acts.flatMap(a => a.beats).flatMap(b => b.dialogue).map(d => (
-              <option key={d.id} value={d.id}>{d.text}</option>
-            ))}
+            {chapter.acts
+              .flatMap((a) => a.beats)
+              .flatMap((b) => b.dialogue)
+              .map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.text}
+                </option>
+              ))}
           </select>
-          {!bubble.dialogueId && <span className="text-[10px] text-slate-300 italic">Empty</span>}
+          {!bubble.dialogueId && (
+            <span className="text-[10px] text-slate-300 italic">Empty</span>
+          )}
         </div>
       </div>
 
       {/* Bubble Tail */}
       <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-r-2 border-b-2 border-yot-dark rotate-45 -z-10 shadow-sm" />
-      
+
       {/* Delete Button */}
-      <button 
-        onClick={(e) => { e.stopPropagation(); deleteBubble(pageId, panelId, bubble.id); }}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          deleteBubble(pageId, panelId, bubble.id);
+        }}
         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-20"
       >
         <Trash2 size={10} />
       </button>
 
       {/* Resize Handle */}
-      <div 
+      <div
         className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-20"
         onMouseDown={startResizing}
       >
@@ -247,32 +291,45 @@ interface StoryboardPanelProps {
   panel: Panel;
   idx: number;
   chapter: Chapter;
-  updatePanel: (pageId: string, panelId: string, updates: Partial<Panel>) => void;
-  updatePanelLayout: (pageId: string, panelId: string, updates: Partial<Panel['layoutData']>) => void;
+  updatePanel: (
+    pageId: string,
+    panelId: string,
+    updates: Partial<Panel>,
+  ) => void;
+  updatePanelLayout: (
+    pageId: string,
+    panelId: string,
+    updates: Partial<Panel['layoutData']>,
+  ) => void;
   addBubbleToPanel: (pageId: string, panelId: string) => void;
-  updateBubble: (pageId: string, panelId: string, bubbleId: string, updates: Partial<Bubble>) => void;
+  updateBubble: (
+    pageId: string,
+    panelId: string,
+    bubbleId: string,
+    updates: Partial<Bubble>,
+  ) => void;
   deleteBubble: (pageId: string, panelId: string, bubbleId: string) => void;
   maxZIndex: number;
   setMaxZIndex: (z: number) => void;
   otherPanels: Panel[];
 }
 
-function StoryboardPanel({ 
-  pageId, 
-  panel, 
-  idx, 
-  chapter, 
-  updatePanel, 
+function StoryboardPanel({
+  pageId,
+  panel,
+  idx,
+  chapter,
+  updatePanel,
   updatePanelLayout,
   addBubbleToPanel,
   updateBubble,
   deleteBubble,
   maxZIndex,
   setMaxZIndex,
-  otherPanels
+  otherPanels,
 }: StoryboardPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   const handleMouseDown = () => {
     const newZ = maxZIndex + 1;
     setMaxZIndex(newZ);
@@ -282,10 +339,12 @@ function StoryboardPanel({
   const startDragging = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    const parent = (e.currentTarget as HTMLElement).closest('.manga-page-container');
+
+    const parent = (e.currentTarget as HTMLElement).closest(
+      '.manga-page-container',
+    );
     if (!parent) return;
-    
+
     const rect = parent.getBoundingClientRect();
     const startX = e.pageX;
     const startY = e.pageY;
@@ -295,17 +354,17 @@ function StoryboardPanel({
     const onMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = ((moveEvent.pageX - startX) / rect.width) * 100;
       const deltaY = ((moveEvent.pageY - startY) / rect.height) * 100;
-      
+
       let newX = initialX + deltaX;
       let newY = initialY + deltaY;
-      
+
       // Default snapping (5% increments)
       newX = Math.round(newX / 5) * 5;
       newY = Math.round(newY / 5) * 5;
 
       // Snapping to other panels
       const threshold = 2; // 2% threshold
-      otherPanels.forEach(other => {
+      otherPanels.forEach((other) => {
         const ox = other.layoutData.x;
         const oy = other.layoutData.y;
         const ow = other.layoutData.w;
@@ -314,31 +373,37 @@ function StoryboardPanel({
         // X-axis snapping
         if (Math.abs(newX - ox) < threshold) newX = ox;
         if (Math.abs(newX - (ox + ow)) < threshold) newX = ox + ow;
-        if (Math.abs((newX + panel.layoutData.w) - ox) < threshold) newX = ox - panel.layoutData.w;
-        if (Math.abs((newX + panel.layoutData.w) - (ox + ow)) < threshold) newX = (ox + ow) - panel.layoutData.w;
+        if (Math.abs(newX + panel.layoutData.w - ox) < threshold)
+          newX = ox - panel.layoutData.w;
+        if (Math.abs(newX + panel.layoutData.w - (ox + ow)) < threshold)
+          newX = ox + ow - panel.layoutData.w;
 
         // Y-axis snapping
         if (Math.abs(newY - oy) < threshold) newY = oy;
         if (Math.abs(newY - (oy + oh)) < threshold) newY = oy + oh;
-        if (Math.abs((newY + panel.layoutData.h) - oy) < threshold) newY = oy - panel.layoutData.h;
-        if (Math.abs((newY + panel.layoutData.h) - (oy + oh)) < threshold) newY = (oy + oh) - panel.layoutData.h;
+        if (Math.abs(newY + panel.layoutData.h - oy) < threshold)
+          newY = oy - panel.layoutData.h;
+        if (Math.abs(newY + panel.layoutData.h - (oy + oh)) < threshold)
+          newY = oy + oh - panel.layoutData.h;
       });
-      
+
       // Bounds
       newX = Math.max(0, Math.min(100 - panel.layoutData.w, newX));
       newY = Math.max(0, Math.min(100 - panel.layoutData.h, newY));
 
       // Collision Detection: Prevent overlapping by stopping at the edge
       const hasCollision = (tx: number, ty: number) => {
-        return otherPanels.some(other => {
+        return otherPanels.some((other) => {
           const ox = other.layoutData.x;
           const oy = other.layoutData.y;
           const ow = other.layoutData.w;
           const oh = other.layoutData.h;
-          return !(tx + panel.layoutData.w <= ox || 
-                   tx >= ox + ow || 
-                   ty + panel.layoutData.h <= oy || 
-                   ty >= oy + oh);
+          return !(
+            tx + panel.layoutData.w <= ox ||
+            tx >= ox + ow ||
+            ty + panel.layoutData.h <= oy ||
+            ty >= oy + oh
+          );
         });
       };
 
@@ -366,10 +431,12 @@ function StoryboardPanel({
   const startResizingBR = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    const parent = (e.currentTarget as HTMLElement).closest('.manga-page-container');
+
+    const parent = (e.currentTarget as HTMLElement).closest(
+      '.manga-page-container',
+    );
     if (!parent) return;
-    
+
     const rect = parent.getBoundingClientRect();
     const startX = e.pageX;
     const startY = e.pageY;
@@ -379,46 +446,52 @@ function StoryboardPanel({
     const onMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = ((moveEvent.pageX - startX) / rect.width) * 100;
       const deltaY = ((moveEvent.pageY - startY) / rect.height) * 100;
-      
+
       let newW = initialW + deltaX;
       let newH = initialH + deltaY;
-      
+
       // Default snapping (5% increments)
       newW = Math.round(newW / 5) * 5;
       newH = Math.round(newH / 5) * 5;
 
       // Snapping to other panels
       const threshold = 2;
-      otherPanels.forEach(other => {
+      otherPanels.forEach((other) => {
         const ox = other.layoutData.x;
         const oy = other.layoutData.y;
         const ow = other.layoutData.w;
         const oh = other.layoutData.h;
 
         // Width snapping
-        if (Math.abs((panel.layoutData.x + newW) - ox) < threshold) newW = ox - panel.layoutData.x;
-        if (Math.abs((panel.layoutData.x + newW) - (ox + ow)) < threshold) newW = (ox + ow) - panel.layoutData.x;
+        if (Math.abs(panel.layoutData.x + newW - ox) < threshold)
+          newW = ox - panel.layoutData.x;
+        if (Math.abs(panel.layoutData.x + newW - (ox + ow)) < threshold)
+          newW = ox + ow - panel.layoutData.x;
 
         // Height snapping
-        if (Math.abs((panel.layoutData.y + newH) - oy) < threshold) newH = oy - panel.layoutData.y;
-        if (Math.abs((panel.layoutData.y + newH) - (oy + oh)) < threshold) newH = (oy + oh) - panel.layoutData.y;
+        if (Math.abs(panel.layoutData.y + newH - oy) < threshold)
+          newH = oy - panel.layoutData.y;
+        if (Math.abs(panel.layoutData.y + newH - (oy + oh)) < threshold)
+          newH = oy + oh - panel.layoutData.y;
       });
-      
+
       // Bounds
       newW = Math.max(10, Math.min(100 - panel.layoutData.x, newW));
       newH = Math.max(10, Math.min(100 - panel.layoutData.y, newH));
 
       // Collision Detection: Prevent overlapping by stopping at the edge
       const hasCollision = (tw: number, th: number) => {
-        return otherPanels.some(other => {
+        return otherPanels.some((other) => {
           const ox = other.layoutData.x;
           const oy = other.layoutData.y;
           const ow = other.layoutData.w;
           const oh = other.layoutData.h;
-          return !(panel.layoutData.x + tw <= ox || 
-                   panel.layoutData.x >= ox + ow || 
-                   panel.layoutData.y + th <= oy || 
-                   panel.layoutData.y >= oy + oh);
+          return !(
+            panel.layoutData.x + tw <= ox ||
+            panel.layoutData.x >= ox + ow ||
+            panel.layoutData.y + th <= oy ||
+            panel.layoutData.y >= oy + oh
+          );
         });
       };
 
@@ -445,10 +518,12 @@ function StoryboardPanel({
   const startResizingBL = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    const parent = (e.currentTarget as HTMLElement).closest('.manga-page-container');
+
+    const parent = (e.currentTarget as HTMLElement).closest(
+      '.manga-page-container',
+    );
     if (!parent) return;
-    
+
     const rect = parent.getBoundingClientRect();
     const startX = e.pageX;
     const startY = e.pageY;
@@ -459,11 +534,11 @@ function StoryboardPanel({
     const onMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = ((moveEvent.pageX - startX) / rect.width) * 100;
       const deltaY = ((moveEvent.pageY - startY) / rect.height) * 100;
-      
+
       let newX = initialX + deltaX;
       let newW = initialW - deltaX;
       let newH = initialH + deltaY;
-      
+
       // Snapping
       newX = Math.round(newX / 5) * 5;
       newW = initialX + initialW - newX;
@@ -482,15 +557,17 @@ function StoryboardPanel({
 
       // Collision
       const hasCollision = (tx: number, tw: number, th: number) => {
-        return otherPanels.some(other => {
+        return otherPanels.some((other) => {
           const ox = other.layoutData.x;
           const oy = other.layoutData.y;
           const ow = other.layoutData.w;
           const oh = other.layoutData.h;
-          return !(tx + tw <= ox || 
-                   tx >= ox + ow || 
-                   panel.layoutData.y + th <= oy || 
-                   panel.layoutData.y >= oy + oh);
+          return !(
+            tx + tw <= ox ||
+            tx >= ox + ow ||
+            panel.layoutData.y + th <= oy ||
+            panel.layoutData.y >= oy + oh
+          );
         });
       };
 
@@ -499,7 +576,9 @@ function StoryboardPanel({
       } else {
         if (!hasCollision(newX, newW, panel.layoutData.h)) {
           updatePanelLayout(pageId, panel.id, { x: newX, w: newW });
-        } else if (!hasCollision(panel.layoutData.x, panel.layoutData.w, newH)) {
+        } else if (
+          !hasCollision(panel.layoutData.x, panel.layoutData.w, newH)
+        ) {
           updatePanelLayout(pageId, panel.id, { h: newH });
         }
       }
@@ -515,47 +594,57 @@ function StoryboardPanel({
   };
 
   return (
-    <div 
+    <div
       className="absolute bg-white border-2 border-yot-dark p-4 flex flex-col gap-2 group shadow-sm transition-shadow hover:shadow-md"
-      style={{ 
+      style={{
         left: `${panel.layoutData.x}%`,
         top: `${panel.layoutData.y}%`,
         width: `${panel.layoutData.w}%`,
         height: `${panel.layoutData.h}%`,
-        zIndex: panel.layoutData.zIndex || 1
+        zIndex: panel.layoutData.zIndex || 1,
       }}
       onMouseDown={handleMouseDown}
     >
       {/* Drag Handle (Title) */}
-      <div 
+      <div
         className="flex justify-between items-center cursor-move bg-yot-accent/20 p-1 rounded -m-1 mb-1"
         onMouseDown={startDragging}
       >
         <div className="flex items-center gap-2">
-          <span className="font-cinzel font-black text-[10px] text-yot-dark opacity-50 uppercase tracking-widest">Panel {idx + 1}</span>
-          <button 
+          <span className="font-cinzel font-black text-[10px] text-yot-dark opacity-50 uppercase tracking-widest">
+            Panel {idx + 1}
+          </span>
+          <button
             onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => { e.stopPropagation(); addBubbleToPanel(pageId, panel.id); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              addBubbleToPanel(pageId, panel.id);
+            }}
             className="p-0.5 bg-yot-secondary text-white rounded hover:bg-yot-primary transition-colors"
             title="Add Speech Bubble"
           >
             <MessageSquare size={10} />
           </button>
         </div>
-        <Maximize2 size={10} className="text-yot-secondary opacity-30 group-hover:opacity-100 transition-opacity" />
+        <Maximize2
+          size={10}
+          className="text-yot-secondary opacity-30 group-hover:opacity-100 transition-opacity"
+        />
       </div>
 
       <div className="flex-1 relative manga-panel-content">
-        <textarea 
+        <textarea
           value={panel.composition}
-          onChange={(e) => updatePanel(pageId, panel.id, { composition: e.target.value })}
+          onChange={(e) =>
+            updatePanel(pageId, panel.id, { composition: e.target.value })
+          }
           placeholder="Action/Composition..."
           className="w-full h-full bg-transparent border-none outline-none resize-none text-[14px] text-slate-500 font-light leading-tight"
         />
-        
+
         {/* Speech Bubbles */}
-        {(panel.bubbles || []).map(bubble => (
-          <StoryboardBubble 
+        {(panel.bubbles || []).map((bubble) => (
+          <StoryboardBubble
             key={bubble.id}
             pageId={pageId}
             panelId={panel.id}
@@ -568,7 +657,7 @@ function StoryboardPanel({
       </div>
 
       {/* Resize Handle (Bottom-Right) */}
-      <div 
+      <div
         className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize flex items-end justify-end p-0.5"
         onMouseDown={startResizingBR}
       >
@@ -576,7 +665,7 @@ function StoryboardPanel({
       </div>
 
       {/* Resize Handle (Bottom-Left) */}
-      <div 
+      <div
         className="absolute bottom-0 left-0 w-4 h-4 cursor-nesw-resize flex items-end justify-start p-0.5"
         onMouseDown={startResizingBL}
       >
@@ -590,46 +679,52 @@ export default function App() {
   const [chapters, setChapters] = useState<Chapter[]>(() => {
     const saved = localStorage.getItem('noswrite-chapters');
     if (saved) return JSON.parse(saved);
-    
+
     // Migration: Check if there's an old single chapter saved
     const oldSaved = localStorage.getItem('noswrite-chapter');
     if (oldSaved) {
       const oldChapter = JSON.parse(oldSaved);
       return [oldChapter];
     }
-    
+
     return [INITIAL_CHAPTER];
   });
 
   const [activeChapterId, setActiveChapterId] = useState<string>(() => {
     const saved = localStorage.getItem('noswrite-active-chapter-id');
     if (saved) return saved;
-    
+
     // Migration: Check if there's an old single chapter saved
     const oldSaved = localStorage.getItem('noswrite-chapter');
     if (oldSaved) {
       const oldChapter = JSON.parse(oldSaved);
       return oldChapter.id;
     }
-    
+
     return INITIAL_CHAPTER.id;
   });
 
-  const chapter = chapters.find(c => c.id === activeChapterId) || chapters[0];
+  const chapter = chapters.find((c) => c.id === activeChapterId) || chapters[0];
 
   const setChapter = (updater: Chapter | ((prev: Chapter) => Chapter)) => {
-    setChapters(prev => prev.map(c => {
-      if (c.id === activeChapterId) {
-        return typeof updater === 'function' ? (updater as any)(c) : updater;
-      }
-      return c;
-    }));
+    setChapters((prev) =>
+      prev.map((c) => {
+        if (c.id === activeChapterId) {
+          return typeof updater === 'function' ? (updater as any)(c) : updater;
+        }
+        return c;
+      }),
+    );
   };
 
-  const [activeTab, setActiveTab] = useState<'outline' | 'dialogue' | 'storyboard'>('outline');
+  const [activeTab, setActiveTab] = useState<
+    'outline' | 'dialogue' | 'storyboard'
+  >('outline');
   const [pageToDelete, setPageToDelete] = useState<string | null>(null);
   const [maxZIndex, setMaxZIndex] = useState(10);
-  const [activeColorPicker, setActiveColorPicker] = useState<string | null>(null);
+  const [activeColorPicker, setActiveColorPicker] = useState<string | null>(
+    null,
+  );
   const [isChapterListOpen, setIsChapterListOpen] = useState(false);
 
   useEffect(() => {
@@ -641,49 +736,55 @@ export default function App() {
     const newChapter: Chapter = {
       ...INITIAL_CHAPTER,
       id: `chapter-${Date.now()}`,
-      title: `New Chapter ${chapters.length + 1}`
+      title: `New Chapter ${chapters.length + 1}`,
     };
-    setChapters(prev => [...prev, newChapter]);
+    setChapters((prev) => [...prev, newChapter]);
     setActiveChapterId(newChapter.id);
     setIsChapterListOpen(false);
   };
 
   const deleteChapter = (id: string) => {
     if (chapters.length <= 1) return;
-    setChapters(prev => prev.filter(c => c.id !== id));
+    setChapters((prev) => prev.filter((c) => c.id !== id));
     if (activeChapterId === id) {
-      setActiveChapterId(chapters.find(c => c.id !== id)?.id || chapters[0].id);
+      setActiveChapterId(
+        chapters.find((c) => c.id !== id)?.id || chapters[0].id,
+      );
     }
   };
 
   // --- ACTS ---
   const updateActTitle = (actId: string, title: string) => {
-    setChapter(prev => ({
+    setChapter((prev) => ({
       ...prev,
-      acts: prev.acts.map(act => act.id === actId ? { ...act, title } : act)
+      acts: prev.acts.map((act) =>
+        act.id === actId ? { ...act, title } : act,
+      ),
     }));
   };
 
   const updateActLocation = (actId: string, locationId: string) => {
-    setChapter(prev => ({
+    setChapter((prev) => ({
       ...prev,
-      acts: prev.acts.map(act => act.id === actId ? { ...act, locationId } : act)
+      acts: prev.acts.map((act) =>
+        act.id === actId ? { ...act, locationId } : act,
+      ),
     }));
   };
 
   const toggleActCharacter = (actId: string, charId: string) => {
-    setChapter(prev => ({
+    setChapter((prev) => ({
       ...prev,
-      acts: prev.acts.map(act => {
+      acts: prev.acts.map((act) => {
         if (act.id !== actId) return act;
         const exists = act.characterIds.includes(charId);
         return {
           ...act,
-          characterIds: exists 
-            ? act.characterIds.filter(id => id !== charId)
-            : [...act.characterIds, charId]
+          characterIds: exists
+            ? act.characterIds.filter((id) => id !== charId)
+            : [...act.characterIds, charId],
         };
-      })
+      }),
     }));
   };
 
@@ -694,55 +795,70 @@ export default function App() {
       title: 'New Beat',
       description: '',
       dialogue: [],
-      characterIds: []
+      characterIds: [],
     };
-    setChapter(prev => ({
+    setChapter((prev) => ({
       ...prev,
-      acts: prev.acts.map(act => 
-        act.id === actId ? { ...act, beats: [...act.beats, newBeat] } : act
-      )
+      acts: prev.acts.map((act) =>
+        act.id === actId ? { ...act, beats: [...act.beats, newBeat] } : act,
+      ),
     }));
   };
 
-  const updateBeat = (actId: string, beatId: string, updates: Partial<Beat>) => {
-    setChapter(prev => ({
+  const updateBeat = (
+    actId: string,
+    beatId: string,
+    updates: Partial<Beat>,
+  ) => {
+    setChapter((prev) => ({
       ...prev,
-      acts: prev.acts.map(act => 
-        act.id === actId 
-          ? { ...act, beats: act.beats.map(beat => beat.id === beatId ? { ...beat, ...updates } : beat) }
-          : act
-      )
+      acts: prev.acts.map((act) =>
+        act.id === actId
+          ? {
+              ...act,
+              beats: act.beats.map((beat) =>
+                beat.id === beatId ? { ...beat, ...updates } : beat,
+              ),
+            }
+          : act,
+      ),
     }));
   };
 
   const deleteBeat = (actId: string, beatId: string) => {
-    setChapter(prev => ({
+    setChapter((prev) => ({
       ...prev,
-      acts: prev.acts.map(act => 
-        act.id === actId ? { ...act, beats: act.beats.filter(beat => beat.id !== beatId) } : act
-      )
+      acts: prev.acts.map((act) =>
+        act.id === actId
+          ? { ...act, beats: act.beats.filter((beat) => beat.id !== beatId) }
+          : act,
+      ),
     }));
   };
 
-  const toggleBeatCharacter = (actId: string, beatId: string, charId: string) => {
-    setChapter(prev => ({
+  const toggleBeatCharacter = (
+    actId: string,
+    beatId: string,
+    charId: string,
+  ) => {
+    setChapter((prev) => ({
       ...prev,
-      acts: prev.acts.map(act => {
+      acts: prev.acts.map((act) => {
         if (act.id !== actId) return act;
         return {
           ...act,
-          beats: act.beats.map(beat => {
+          beats: act.beats.map((beat) => {
             if (beat.id !== beatId) return beat;
             const exists = beat.characterIds.includes(charId);
             return {
               ...beat,
-              characterIds: exists 
-                ? beat.characterIds.filter(id => id !== charId)
-                : [...beat.characterIds, charId]
+              characterIds: exists
+                ? beat.characterIds.filter((id) => id !== charId)
+                : [...beat.characterIds, charId],
             };
-          })
+          }),
         };
-      })
+      }),
     }));
   };
 
@@ -751,34 +867,37 @@ export default function App() {
     const newChar: Character = {
       id: `char-${Date.now()}`,
       name: 'New Character',
-      color: CHARACTER_PALETTE[chapter.characters.length % CHARACTER_PALETTE.length]
+      color:
+        CHARACTER_PALETTE[chapter.characters.length % CHARACTER_PALETTE.length],
     };
-    setChapter(prev => ({
+    setChapter((prev) => ({
       ...prev,
-      characters: [...prev.characters, newChar]
+      characters: [...prev.characters, newChar],
     }));
   };
 
   const updateCharacter = (id: string, updates: Partial<Character>) => {
-    setChapter(prev => ({
+    setChapter((prev) => ({
       ...prev,
-      characters: prev.characters.map(c => c.id === id ? { ...c, ...updates } : c)
+      characters: prev.characters.map((c) =>
+        c.id === id ? { ...c, ...updates } : c,
+      ),
     }));
   };
 
   const deleteCharacter = (id: string) => {
-    setChapter(prev => ({
+    setChapter((prev) => ({
       ...prev,
-      characters: prev.characters.filter(c => c.id !== id),
-      acts: prev.acts.map(act => ({
+      characters: prev.characters.filter((c) => c.id !== id),
+      acts: prev.acts.map((act) => ({
         ...act,
-        characterIds: act.characterIds.filter(cid => cid !== id),
-        beats: act.beats.map(beat => ({
+        characterIds: act.characterIds.filter((cid) => cid !== id),
+        beats: act.beats.map((beat) => ({
           ...beat,
-          characterIds: beat.characterIds.filter(cid => cid !== id),
-          dialogue: beat.dialogue.filter(d => d.characterId !== id)
-        }))
-      }))
+          characterIds: beat.characterIds.filter((cid) => cid !== id),
+          dialogue: beat.dialogue.filter((d) => d.characterId !== id),
+        })),
+      })),
     }));
   };
 
@@ -787,71 +906,113 @@ export default function App() {
     const newLoc: Location = {
       id: `loc-${Date.now()}`,
       name: 'New Location',
-      description: ''
+      description: '',
     };
-    setChapter(prev => ({
+    setChapter((prev) => ({
       ...prev,
-      locations: [...prev.locations, newLoc]
+      locations: [...prev.locations, newLoc],
     }));
   };
 
   const updateLocation = (id: string, updates: Partial<Location>) => {
-    setChapter(prev => ({
+    setChapter((prev) => ({
       ...prev,
-      locations: prev.locations.map(l => l.id === id ? { ...l, ...updates } : l)
+      locations: prev.locations.map((l) =>
+        l.id === id ? { ...l, ...updates } : l,
+      ),
     }));
   };
 
   const deleteLocation = (id: string) => {
-    setChapter(prev => ({
+    setChapter((prev) => ({
       ...prev,
-      locations: prev.locations.filter(l => l.id !== id),
-      acts: prev.acts.map(act => act.locationId === id ? { ...act, locationId: undefined } : act)
+      locations: prev.locations.filter((l) => l.id !== id),
+      acts: prev.acts.map((act) =>
+        act.locationId === id ? { ...act, locationId: undefined } : act,
+      ),
     }));
   };
 
   // --- DIALOGUE ---
-  const addDialogueToBeat = (actId: string, beatId: string, characterId: string) => {
+  const addDialogueToBeat = (
+    actId: string,
+    beatId: string,
+    characterId: string,
+  ) => {
     const newDialogue: Dialogue = {
       id: `diag-${Date.now()}`,
       characterId,
-      text: ''
+      text: '',
     };
-    setChapter(prev => ({
+    setChapter((prev) => ({
       ...prev,
-      acts: prev.acts.map(act => 
-        act.id === actId 
-          ? { ...act, beats: act.beats.map(beat => 
-              beat.id === beatId ? { ...beat, dialogue: [...beat.dialogue, newDialogue] } : beat
-            ) }
-          : act
-      )
+      acts: prev.acts.map((act) =>
+        act.id === actId
+          ? {
+              ...act,
+              beats: act.beats.map((beat) =>
+                beat.id === beatId
+                  ? { ...beat, dialogue: [...beat.dialogue, newDialogue] }
+                  : beat,
+              ),
+            }
+          : act,
+      ),
     }));
   };
 
-  const updateDialogue = (actId: string, beatId: string, dialogueId: string, text: string) => {
-    setChapter(prev => ({
+  const updateDialogue = (
+    actId: string,
+    beatId: string,
+    dialogueId: string,
+    text: string,
+  ) => {
+    setChapter((prev) => ({
       ...prev,
-      acts: prev.acts.map(act => 
-        act.id === actId 
-          ? { ...act, beats: act.beats.map(beat => 
-              beat.id === beatId ? { ...beat, dialogue: beat.dialogue.map(d => d.id === dialogueId ? { ...d, text } : d) } : beat
-            ) }
-          : act
-      )
+      acts: prev.acts.map((act) =>
+        act.id === actId
+          ? {
+              ...act,
+              beats: act.beats.map((beat) =>
+                beat.id === beatId
+                  ? {
+                      ...beat,
+                      dialogue: beat.dialogue.map((d) =>
+                        d.id === dialogueId ? { ...d, text } : d,
+                      ),
+                    }
+                  : beat,
+              ),
+            }
+          : act,
+      ),
     }));
   };
 
-  const deleteDialogue = (actId: string, beatId: string, dialogueId: string) => {
-    setChapter(prev => ({
+  const deleteDialogue = (
+    actId: string,
+    beatId: string,
+    dialogueId: string,
+  ) => {
+    setChapter((prev) => ({
       ...prev,
-      acts: prev.acts.map(act => 
-        act.id === actId 
-          ? { ...act, beats: act.beats.map(beat => 
-              beat.id === beatId ? { ...beat, dialogue: beat.dialogue.filter(d => d.id !== dialogueId) } : beat
-            ) }
-          : act
-      )
+      acts: prev.acts.map((act) =>
+        act.id === actId
+          ? {
+              ...act,
+              beats: act.beats.map((beat) =>
+                beat.id === beatId
+                  ? {
+                      ...beat,
+                      dialogue: beat.dialogue.filter(
+                        (d) => d.id !== dialogueId,
+                      ),
+                    }
+                  : beat,
+              ),
+            }
+          : act,
+      ),
     }));
   };
 
@@ -861,37 +1022,39 @@ export default function App() {
       id: `page-${Date.now()}`,
       pageNumber: chapter.pages.length + 1,
       panelCount: 0,
-      panels: []
+      panels: [],
     };
-    setChapter(prev => ({
+    setChapter((prev) => ({
       ...prev,
-      pages: [...prev.pages, newPage]
+      pages: [...prev.pages, newPage],
     }));
   };
 
   const clearPage = (pageId: string) => {
-    setChapter(prev => ({
+    setChapter((prev) => ({
       ...prev,
-      pages: prev.pages.map(p => 
-        p.id === pageId ? { ...p, panels: [], panelCount: 0 } : p
-      )
+      pages: prev.pages.map((p) =>
+        p.id === pageId ? { ...p, panels: [], panelCount: 0 } : p,
+      ),
     }));
   };
 
   const deletePage = (pageId: string) => {
-    setChapter(prev => ({
+    setChapter((prev) => ({
       ...prev,
-      pages: prev.pages.filter(p => p.id !== pageId).map((p, idx) => ({ ...p, pageNumber: idx + 1 }))
+      pages: prev.pages
+        .filter((p) => p.id !== pageId)
+        .map((p, idx) => ({ ...p, pageNumber: idx + 1 })),
     }));
     setPageToDelete(null);
   };
 
   const updatePage = (pageId: string, panelCount: number) => {
-    setChapter(prev => ({
+    setChapter((prev) => ({
       ...prev,
-      pages: prev.pages.map(p => {
+      pages: prev.pages.map((p) => {
         if (p.id !== pageId) return p;
-        
+
         let newPanels = [...p.panels];
         if (panelCount > p.panels.length) {
           for (let i = p.panels.length; i < panelCount; i++) {
@@ -899,7 +1062,13 @@ export default function App() {
               id: `panel-${Date.now()}-${i}`,
               composition: '',
               bubbles: [],
-              layoutData: { x: 0, y: (i * 10) % 100, w: 100, h: 25, zIndex: i + 1 }
+              layoutData: {
+                x: 0,
+                y: (i * 10) % 100,
+                w: 100,
+                h: 25,
+                zIndex: i + 1,
+              },
             });
           }
         } else {
@@ -907,29 +1076,49 @@ export default function App() {
         }
 
         return { ...p, panelCount, panels: newPanels };
-      })
+      }),
     }));
   };
 
-  const updatePanel = (pageId: string, panelId: string, updates: Partial<Panel>) => {
-    setChapter(prev => ({
+  const updatePanel = (
+    pageId: string,
+    panelId: string,
+    updates: Partial<Panel>,
+  ) => {
+    setChapter((prev) => ({
       ...prev,
-      pages: prev.pages.map(p => 
-        p.id === pageId 
-          ? { ...p, panels: p.panels.map(pan => pan.id === panelId ? { ...pan, ...updates } : pan) }
-          : p
-      )
+      pages: prev.pages.map((p) =>
+        p.id === pageId
+          ? {
+              ...p,
+              panels: p.panels.map((pan) =>
+                pan.id === panelId ? { ...pan, ...updates } : pan,
+              ),
+            }
+          : p,
+      ),
     }));
   };
 
-  const updatePanelLayout = (pageId: string, panelId: string, updates: Partial<Panel['layoutData']>) => {
-    setChapter(prev => ({
+  const updatePanelLayout = (
+    pageId: string,
+    panelId: string,
+    updates: Partial<Panel['layoutData']>,
+  ) => {
+    setChapter((prev) => ({
       ...prev,
-      pages: prev.pages.map(p => 
-        p.id === pageId 
-          ? { ...p, panels: p.panels.map(pan => pan.id === panelId ? { ...pan, layoutData: { ...pan.layoutData, ...updates } } : pan) }
-          : p
-      )
+      pages: prev.pages.map((p) =>
+        p.id === pageId
+          ? {
+              ...p,
+              panels: p.panels.map((pan) =>
+                pan.id === panelId
+                  ? { ...pan, layoutData: { ...pan.layoutData, ...updates } }
+                  : pan,
+              ),
+            }
+          : p,
+      ),
     }));
   };
 
@@ -940,52 +1129,80 @@ export default function App() {
       x: 25,
       y: 25,
       w: 50,
-      h: 30
+      h: 30,
     };
-    setChapter(prev => ({
+    setChapter((prev) => ({
       ...prev,
-      pages: prev.pages.map(p => 
-        p.id === pageId 
-          ? { ...p, panels: p.panels.map(pan => 
-              pan.id === panelId ? { ...pan, bubbles: [...(pan.bubbles || []), newBubble] } : pan
-            ) }
-          : p
-      )
+      pages: prev.pages.map((p) =>
+        p.id === pageId
+          ? {
+              ...p,
+              panels: p.panels.map((pan) =>
+                pan.id === panelId
+                  ? { ...pan, bubbles: [...(pan.bubbles || []), newBubble] }
+                  : pan,
+              ),
+            }
+          : p,
+      ),
     }));
   };
 
-  const updateBubble = (pageId: string, panelId: string, bubbleId: string, updates: Partial<Bubble>) => {
-    setChapter(prev => ({
+  const updateBubble = (
+    pageId: string,
+    panelId: string,
+    bubbleId: string,
+    updates: Partial<Bubble>,
+  ) => {
+    setChapter((prev) => ({
       ...prev,
-      pages: prev.pages.map(p => 
-        p.id === pageId 
-          ? { ...p, panels: p.panels.map(pan => 
-              pan.id === panelId ? { ...pan, bubbles: pan.bubbles.map(b => b.id === bubbleId ? { ...b, ...updates } : b) } : pan
-            ) }
-          : p
-      )
+      pages: prev.pages.map((p) =>
+        p.id === pageId
+          ? {
+              ...p,
+              panels: p.panels.map((pan) =>
+                pan.id === panelId
+                  ? {
+                      ...pan,
+                      bubbles: pan.bubbles.map((b) =>
+                        b.id === bubbleId ? { ...b, ...updates } : b,
+                      ),
+                    }
+                  : pan,
+              ),
+            }
+          : p,
+      ),
     }));
   };
 
   const deleteBubble = (pageId: string, panelId: string, bubbleId: string) => {
-    setChapter(prev => ({
+    setChapter((prev) => ({
       ...prev,
-      pages: prev.pages.map(p => 
-        p.id === pageId 
-          ? { ...p, panels: p.panels.map(pan => 
-              pan.id === panelId ? { ...pan, bubbles: pan.bubbles.filter(b => b.id !== bubbleId) } : pan
-            ) }
-          : p
-      )
+      pages: prev.pages.map((p) =>
+        p.id === pageId
+          ? {
+              ...p,
+              panels: p.panels.map((pan) =>
+                pan.id === panelId
+                  ? {
+                      ...pan,
+                      bubbles: pan.bubbles.filter((b) => b.id !== bubbleId),
+                    }
+                  : pan,
+              ),
+            }
+          : p,
+      ),
     }));
   };
 
   const addPanelToPage = (pageId: string) => {
-    setChapter(prev => ({
+    setChapter((prev) => ({
       ...prev,
-      pages: prev.pages.map(p => {
+      pages: prev.pages.map((p) => {
         if (p.id !== pageId) return p;
-        
+
         const lastPanel = p.panels[p.panels.length - 1];
         let newX = 0;
         let newY = 0;
@@ -995,7 +1212,7 @@ export default function App() {
         if (lastPanel) {
           newW = lastPanel.layoutData.w;
           newH = lastPanel.layoutData.h;
-          
+
           // Try to place next to last panel
           newX = lastPanel.layoutData.x + lastPanel.layoutData.w;
           newY = lastPanel.layoutData.y;
@@ -1005,7 +1222,7 @@ export default function App() {
             newX = 0;
             newY = lastPanel.layoutData.y + lastPanel.layoutData.h;
           }
-          
+
           // If exceeds height, just cap it
           if (newY + newH > 100) {
             newY = 100 - newH;
@@ -1016,15 +1233,17 @@ export default function App() {
         let attempts = 0;
         const maxAttempts = 20;
         while (attempts < maxAttempts) {
-          const hasCollision = p.panels.some(other => {
+          const hasCollision = p.panels.some((other) => {
             const ox = other.layoutData.x;
             const oy = other.layoutData.y;
             const ow = other.layoutData.w;
             const oh = other.layoutData.h;
-            return !(newX + newW <= ox || 
-                     newX >= ox + ow || 
-                     newY + newH <= oy || 
-                     newY >= oy + oh);
+            return !(
+              newX + newW <= ox ||
+              newX >= ox + ow ||
+              newY + newH <= oy ||
+              newY >= oy + oh
+            );
           });
 
           if (!hasCollision) break;
@@ -1048,13 +1267,23 @@ export default function App() {
           id: `panel-${Date.now()}`,
           composition: '',
           bubbles: [],
-          layoutData: { x: newX, y: newY, w: newW, h: newH, zIndex: maxZIndex + 1 }
+          layoutData: {
+            x: newX,
+            y: newY,
+            w: newW,
+            h: newH,
+            zIndex: maxZIndex + 1,
+          },
         };
-        
-        return { ...p, panels: [...p.panels, newPanel], panelCount: p.panels.length + 1 };
-      })
+
+        return {
+          ...p,
+          panels: [...p.panels, newPanel],
+          panelCount: p.panels.length + 1,
+        };
+      }),
     }));
-    setMaxZIndex(prev => prev + 1);
+    setMaxZIndex((prev) => prev + 1);
   };
 
   return (
@@ -1062,30 +1291,33 @@ export default function App() {
       {/* Cinematic Header */}
       <header className="bg-yot-dark p-8 md:p-12 relative overflow-hidden">
         <div className="absolute inset-0 opacity-20">
-          <img 
-            src="https://picsum.photos/seed/noswrite/1920/1080?blur=4" 
-            alt="Background" 
+          <img
+            src="https://pub-c762db5339954ab98813a32e9aaa79ff.r2.dev/chapter16/YOTCH-16_001.png"
+            alt="Background"
             className="w-full h-full object-cover grayscale"
+            style={{ objectPosition: 'center 45%' }}
             referrerPolicy="no-referrer"
           />
         </div>
         <div className="relative z-10 max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-            <div className="text-center md:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-yot-secondary/20 rounded-full text-yot-secondary text-[10px] font-black uppercase tracking-[0.3em] mb-4 border border-yot-secondary/30">
-                <Sparkles size={12} /> NosWrite Tool
-              </div>
-              <div className="flex items-center gap-4 mb-2">
-                <h1 className="text-5xl md:text-7xl text-white leading-none">
-                  Nos<span className="text-yot-secondary">Write</span>
-                </h1>
-              </div>
-              <input 
-                value={chapter.title}
-                onChange={(e) => setChapter(prev => ({ ...prev, title: e.target.value }))}
-                className="text-xl text-slate-400 bg-transparent border-none outline-none focus:ring-0 w-full max-w-md font-light italic"
-                placeholder="Enter Chapter Title..."
-              />
+          <div className="text-center md:text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-yot-secondary/20 rounded-full text-yot-secondary text-[10px] font-black uppercase tracking-[0.3em] mb-4 border border-yot-secondary/30">
+              <Sparkles size={12} /> Chapter Planning Tool
             </div>
+            <div className="flex items-center gap-4 mb-2">
+              <h1 className="text-5xl md:text-7xl text-white leading-none">
+                Nos<span className="text-yot-secondary">Write</span>
+              </h1>
+            </div>
+            <input
+              value={chapter.title}
+              onChange={(e) =>
+                setChapter((prev) => ({ ...prev, title: e.target.value }))
+              }
+              className="text-xl text-slate-400 bg-transparent border-none outline-none focus:ring-0 w-full max-w-md font-light italic"
+              placeholder="Enter Chapter Title..."
+            />
+          </div>
           <div className="flex gap-4">
             <button className="yot-btn-outline !border-white !text-white hover:!bg-white hover:!text-yot-dark flex items-center gap-2">
               <Save size={16} /> Save
@@ -1101,28 +1333,38 @@ export default function App() {
       <nav className="flex items-center justify-center gap-4 md:gap-12 p-6 border-b border-yot-accent bg-white sticky top-0 z-50 shadow-sm">
         {/* Chapter Selector */}
         <div className="relative">
-          <button 
+          <button
             onClick={() => setIsChapterListOpen(!isChapterListOpen)}
             className="flex items-center gap-2 bg-yot-accent/50 hover:bg-yot-accent text-yot-primary px-4 py-3 rounded-2xl border border-yot-secondary/10 transition-all"
           >
             <BookOpen size={18} className="text-yot-secondary" />
-            <span className="font-cinzel font-black text-xs uppercase tracking-widest">Chapters</span>
-            <ChevronDown size={16} className={`transition-transform ${isChapterListOpen ? 'rotate-180' : ''}`} />
+            <span className="font-cinzel font-black text-xs uppercase tracking-widest">
+              Chapters
+            </span>
+            <ChevronDown
+              size={16}
+              className={`transition-transform ${isChapterListOpen ? 'rotate-180' : ''}`}
+            />
           </button>
 
           <AnimatePresence>
             {isChapterListOpen && (
               <>
-                <div className="fixed inset-0 z-40" onClick={() => setIsChapterListOpen(false)} />
-                <motion.div 
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setIsChapterListOpen(false)}
+                />
+                <motion.div
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   className="absolute left-0 top-full mt-2 z-50 w-64 bg-white border border-yot-accent rounded-2xl shadow-2xl overflow-hidden"
                 >
                   <div className="p-4 border-b border-yot-accent bg-yot-bg flex justify-between items-center">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Your Chapters</span>
-                    <button 
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      Your Chapters
+                    </span>
+                    <button
                       onClick={addChapter}
                       className="p-1 bg-yot-secondary text-white rounded-lg hover:bg-yot-primary transition-colors"
                     >
@@ -1130,11 +1372,13 @@ export default function App() {
                     </button>
                   </div>
                   <div className="max-h-64 overflow-y-auto">
-                    {chapters.map(c => (
-                      <div 
+                    {chapters.map((c) => (
+                      <div
                         key={c.id}
                         className={`flex items-center justify-between p-4 cursor-pointer transition-colors ${
-                          c.id === activeChapterId ? 'bg-yot-accent text-yot-primary border-l-4 border-yot-secondary' : 'hover:bg-yot-bg border-l-4 border-transparent'
+                          c.id === activeChapterId
+                            ? 'bg-yot-accent text-yot-primary border-l-4 border-yot-secondary'
+                            : 'hover:bg-yot-bg border-l-4 border-transparent'
                         }`}
                         onClick={() => {
                           setActiveChapterId(c.id);
@@ -1142,11 +1386,15 @@ export default function App() {
                         }}
                       >
                         <div className="flex-1 truncate pr-4">
-                          <div className="text-sm font-bold text-slate-700 truncate">{c.title}</div>
-                          <div className="text-[10px] text-slate-400 uppercase tracking-widest">{c.acts.length} Acts</div>
+                          <div className="text-sm font-bold text-slate-700 truncate">
+                            {c.title}
+                          </div>
+                          <div className="text-[10px] text-slate-400 uppercase tracking-widest">
+                            {c.acts.length} Acts
+                          </div>
                         </div>
                         {chapters.length > 1 && (
-                          <button 
+                          <button
                             onClick={(e) => {
                               e.stopPropagation();
                               deleteChapter(c.id);
@@ -1171,18 +1419,22 @@ export default function App() {
           { id: 'outline', label: 'Outline', icon: FileText },
           { id: 'dialogue', label: 'Dialogue', icon: MessageSquare },
           { id: 'storyboard', label: 'Storyboard', icon: Layout },
-        ].map(tab => (
+        ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
             className={`flex items-center gap-3 px-6 py-3 rounded-2xl transition-all group ${
-              activeTab === tab.id 
-                ? 'bg-yot-accent text-yot-primary shadow-inner border border-yot-secondary/20' 
+              activeTab === tab.id
+                ? 'bg-yot-accent text-yot-primary shadow-inner border border-yot-secondary/20'
                 : 'text-slate-400 hover:text-yot-primary hover:bg-yot-accent/30'
             }`}
           >
-            <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-yot-secondary' : 'text-slate-300 group-hover:text-yot-secondary'}`} />
-            <span className="font-cinzel font-black uppercase text-xs tracking-widest">{tab.label}</span>
+            <tab.icon
+              className={`w-5 h-5 ${activeTab === tab.id ? 'text-yot-secondary' : 'text-slate-300 group-hover:text-yot-secondary'}`}
+            />
+            <span className="font-cinzel font-black uppercase text-xs tracking-widest">
+              {tab.label}
+            </span>
           </button>
         ))}
       </nav>
@@ -1204,28 +1456,43 @@ export default function App() {
                 <div className="yot-card p-8">
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-lg text-yot-primary">Characters</h3>
-                    <button onClick={addCharacter} className="text-yot-secondary hover:bg-yot-accent p-1 rounded-full transition-colors">
+                    <button
+                      onClick={addCharacter}
+                      className="text-yot-secondary hover:bg-yot-accent p-1 rounded-full transition-colors"
+                    >
                       <Plus size={20} />
                     </button>
                   </div>
                   <div className="space-y-4">
-                    {chapter.characters.map(char => (
-                      <div key={char.id} className="flex items-center gap-3 group">
-                        <CharacterColorPicker 
+                    {chapter.characters.map((char) => (
+                      <div
+                        key={char.id}
+                        className="flex items-center gap-3 group"
+                      >
+                        <CharacterColorPicker
                           char={char}
                           isOpen={activeColorPicker === char.id}
-                          onToggle={() => setActiveColorPicker(activeColorPicker === char.id ? null : char.id)}
+                          onToggle={() =>
+                            setActiveColorPicker(
+                              activeColorPicker === char.id ? null : char.id,
+                            )
+                          }
                           onSelect={(color) => {
                             updateCharacter(char.id, { color });
                             setActiveColorPicker(null);
                           }}
                         />
-                        <input 
+                        <input
                           value={char.name}
-                          onChange={(e) => updateCharacter(char.id, { name: e.target.value })}
+                          onChange={(e) =>
+                            updateCharacter(char.id, { name: e.target.value })
+                          }
                           className="flex-1 bg-transparent border-none outline-none text-sm font-bold text-slate-700"
                         />
-                        <button onClick={() => deleteCharacter(char.id)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => deleteCharacter(char.id)}
+                          className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -1237,20 +1504,34 @@ export default function App() {
                 <div className="yot-card p-8">
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-lg text-yot-primary">Locations</h3>
-                    <button onClick={addLocation} className="text-yot-secondary hover:bg-yot-accent p-1 rounded-full transition-colors">
+                    <button
+                      onClick={addLocation}
+                      className="text-yot-secondary hover:bg-yot-accent p-1 rounded-full transition-colors"
+                    >
                       <Plus size={20} />
                     </button>
                   </div>
                   <div className="space-y-4">
-                    {chapter.locations.map(loc => (
-                      <div key={loc.id} className="flex items-center gap-3 group">
-                        <MapPin size={14} className="text-yot-secondary shrink-0" />
-                        <input 
+                    {chapter.locations.map((loc) => (
+                      <div
+                        key={loc.id}
+                        className="flex items-center gap-3 group"
+                      >
+                        <MapPin
+                          size={14}
+                          className="text-yot-secondary shrink-0"
+                        />
+                        <input
                           value={loc.name}
-                          onChange={(e) => updateLocation(loc.id, { name: e.target.value })}
+                          onChange={(e) =>
+                            updateLocation(loc.id, { name: e.target.value })
+                          }
                           className="flex-1 bg-transparent border-none outline-none text-sm font-bold text-slate-700"
                         />
-                        <button onClick={() => deleteLocation(loc.id)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => deleteLocation(loc.id)}
+                          className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -1265,32 +1546,42 @@ export default function App() {
                   <section key={act.id} className="yot-card p-10 space-y-8">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-yot-accent pb-6">
                       <div className="flex-1 w-full">
-                        <input 
+                        <input
                           value={act.title}
-                          onChange={(e) => updateActTitle(act.id, e.target.value)}
+                          onChange={(e) =>
+                            updateActTitle(act.id, e.target.value)
+                          }
                           className="text-3xl md:text-4xl font-black text-yot-primary bg-transparent border-none outline-none w-full uppercase tracking-tighter"
                         />
                         <div className="flex flex-wrap gap-4 mt-4">
                           {/* Location Selector */}
                           <div className="flex items-center gap-2 bg-yot-accent/50 px-3 py-1 rounded-full">
                             <MapPin size={14} className="text-yot-secondary" />
-                            <select 
+                            <select
                               value={act.locationId || ''}
-                              onChange={(e) => updateActLocation(act.id, e.target.value)}
+                              onChange={(e) =>
+                                updateActLocation(act.id, e.target.value)
+                              }
                               className="bg-transparent border-none outline-none text-[10px] font-black uppercase tracking-widest text-yot-primary"
                             >
                               <option value="">No Location</option>
-                              {chapter.locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                              {chapter.locations.map((l) => (
+                                <option key={l.id} value={l.id}>
+                                  {l.name}
+                                </option>
+                              ))}
                             </select>
                           </div>
                           {/* Act Characters */}
                           <div className="flex items-center gap-2">
                             <Users size={14} className="text-slate-400" />
                             <div className="flex flex-wrap gap-2">
-                              {chapter.characters.map(char => (
+                              {chapter.characters.map((char) => (
                                 <button
                                   key={char.id}
-                                  onClick={() => toggleActCharacter(act.id, char.id)}
+                                  onClick={() =>
+                                    toggleActCharacter(act.id, char.id)
+                                  }
                                   className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
                                     act.characterIds.includes(char.id)
                                       ? 'bg-yot-secondary text-white border-yot-secondary'
@@ -1304,7 +1595,7 @@ export default function App() {
                           </div>
                         </div>
                       </div>
-                      <button 
+                      <button
                         onClick={() => addBeat(act.id)}
                         className="yot-btn-primary whitespace-nowrap"
                       >
@@ -1314,38 +1605,62 @@ export default function App() {
 
                     <div className="space-y-6">
                       {act.beats.map((beat) => (
-                        <div key={beat.id} className="p-8 bg-yot-bg rounded-3xl border border-yot-accent hover:border-yot-secondary transition-all group">
+                        <div
+                          key={beat.id}
+                          className="p-8 bg-yot-bg rounded-3xl border border-yot-accent hover:border-yot-secondary transition-all group"
+                        >
                           <div className="flex justify-between items-start mb-4">
-                            <input 
+                            <input
                               value={beat.title}
-                              onChange={(e) => updateBeat(act.id, beat.id, { title: e.target.value })}
+                              onChange={(e) =>
+                                updateBeat(act.id, beat.id, {
+                                  title: e.target.value,
+                                })
+                              }
                               className="text-xl font-black text-yot-primary bg-transparent border-none outline-none w-full uppercase"
                             />
-                            <button onClick={() => deleteBeat(act.id, beat.id)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => deleteBeat(act.id, beat.id)}
+                              className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
                               <Trash2 size={18} />
                             </button>
                           </div>
-                          <textarea 
+                          <textarea
                             value={beat.description}
-                            onChange={(e) => updateBeat(act.id, beat.id, { description: e.target.value })}
+                            onChange={(e) =>
+                              updateBeat(act.id, beat.id, {
+                                description: e.target.value,
+                              })
+                            }
                             placeholder="Beat description..."
                             className="w-full bg-transparent border-none outline-none resize-none min-h-[80px] text-slate-500 font-light leading-relaxed"
                           />
                           <div className="mt-4 pt-4 border-t border-yot-accent flex flex-wrap gap-2">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mr-2">Beat Cast:</span>
-                            {chapter.characters.filter(c => act.characterIds.includes(c.id)).map(char => (
-                              <button
-                                key={char.id}
-                                onClick={() => toggleBeatCharacter(act.id, beat.id, char.id)}
-                                className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border transition-all ${
-                                  beat.characterIds.includes(char.id)
-                                    ? 'bg-yot-primary text-white border-yot-primary'
-                                    : 'bg-white text-slate-300 border-slate-100 hover:border-yot-primary'
-                                }`}
-                              >
-                                {char.name}
-                              </button>
-                            ))}
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mr-2">
+                              Beat Cast:
+                            </span>
+                            {chapter.characters
+                              .filter((c) => act.characterIds.includes(c.id))
+                              .map((char) => (
+                                <button
+                                  key={char.id}
+                                  onClick={() =>
+                                    toggleBeatCharacter(
+                                      act.id,
+                                      beat.id,
+                                      char.id,
+                                    )
+                                  }
+                                  className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border transition-all ${
+                                    beat.characterIds.includes(char.id)
+                                      ? 'bg-yot-primary text-white border-yot-primary'
+                                      : 'bg-white text-slate-300 border-slate-100 hover:border-yot-primary'
+                                  }`}
+                                >
+                                  {char.name}
+                                </button>
+                              ))}
                           </div>
                         </div>
                       ))}
@@ -1364,55 +1679,83 @@ export default function App() {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-12"
             >
-              {chapter.acts.map(act => (
+              {chapter.acts.map((act) => (
                 <div key={act.id} className="space-y-8">
                   <div className="flex items-center gap-4">
                     <h2 className="text-3xl text-yot-primary">{act.title}</h2>
                     <div className="h-px flex-1 bg-yot-accent"></div>
                     {act.locationId && (
                       <div className="flex items-center gap-2 text-yot-secondary text-xs font-black uppercase tracking-widest">
-                        <MapPin size={14} /> {chapter.locations.find(l => l.id === act.locationId)?.name}
+                        <MapPin size={14} />{' '}
+                        {
+                          chapter.locations.find((l) => l.id === act.locationId)
+                            ?.name
+                        }
                       </div>
                     )}
                   </div>
 
                   <div className="grid gap-8">
-                    {act.beats.map(beat => (
+                    {act.beats.map((beat) => (
                       <div key={beat.id} className="yot-card p-10">
                         <h4 className="text-xl text-yot-primary mb-8 border-b border-yot-accent pb-4 flex justify-between items-center">
                           {beat.title}
-                          <span className="text-[10px] font-light text-slate-400 italic">Beat Script</span>
+                          <span className="text-[10px] font-light text-slate-400 italic">
+                            Beat Script
+                          </span>
                         </h4>
-                        
+
                         <div className="space-y-8">
-                          {beat.dialogue.map(diag => {
-                            const char = chapter.characters.find(c => c.id === diag.characterId);
+                          {beat.dialogue.map((diag) => {
+                            const char = chapter.characters.find(
+                              (c) => c.id === diag.characterId,
+                            );
                             return (
-                              <div key={diag.id} className="flex gap-8 items-start group">
+                              <div
+                                key={diag.id}
+                                className="flex gap-8 items-start group"
+                              >
                                 <div className="w-32 shrink-0 text-right">
-                                  <div 
+                                  <div
                                     className="font-cinzel font-black text-xs uppercase tracking-[0.2em] mb-1"
                                     style={{ color: char?.color || 'inherit' }}
                                   >
                                     {char?.name || 'Unknown'}
                                   </div>
-                                  <div className="w-full h-1 rounded-full" style={{ backgroundColor: char?.color || '#eee', opacity: 0.3 }} />
+                                  <div
+                                    className="w-full h-1 rounded-full"
+                                    style={{
+                                      backgroundColor: char?.color || '#eee',
+                                      opacity: 0.3,
+                                    }}
+                                  />
                                 </div>
                                 <div className="flex-1 relative">
-                                  <textarea 
+                                  <textarea
                                     value={diag.text}
-                                    onChange={(e) => updateDialogue(act.id, beat.id, diag.id, e.target.value)}
+                                    onChange={(e) =>
+                                      updateDialogue(
+                                        act.id,
+                                        beat.id,
+                                        diag.id,
+                                        e.target.value,
+                                      )
+                                    }
                                     placeholder="Type dialogue line..."
                                     className="w-full bg-transparent border-none outline-none resize-none text-lg text-slate-600 font-light leading-relaxed italic"
                                     rows={1}
                                     onInput={(e) => {
-                                      const target = e.target as HTMLTextAreaElement;
+                                      const target =
+                                        e.target as HTMLTextAreaElement;
                                       target.style.height = 'auto';
-                                      target.style.height = target.scrollHeight + 'px';
+                                      target.style.height =
+                                        target.scrollHeight + 'px';
                                     }}
                                   />
-                                  <button 
-                                    onClick={() => deleteDialogue(act.id, beat.id, diag.id)}
+                                  <button
+                                    onClick={() =>
+                                      deleteDialogue(act.id, beat.id, diag.id)
+                                    }
                                     className="absolute -right-8 top-1 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                                   >
                                     <Trash2 size={14} />
@@ -1423,18 +1766,27 @@ export default function App() {
                           })}
 
                           <div className="flex flex-wrap gap-3 pt-6 border-t border-yot-accent/50">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 self-center mr-2">Add Line:</span>
-                            {chapter.characters.filter(c => beat.characterIds.includes(c.id)).map(char => (
-                              <button
-                                key={char.id}
-                                onClick={() => addDialogueToBeat(act.id, beat.id, char.id)}
-                                className="flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] uppercase font-black tracking-widest border border-yot-accent hover:border-yot-secondary hover:bg-yot-accent transition-all text-yot-primary"
-                              >
-                                <Plus size={12} /> {char.name}
-                              </button>
-                            ))}
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 self-center mr-2">
+                              Add Line:
+                            </span>
+                            {chapter.characters
+                              .filter((c) => beat.characterIds.includes(c.id))
+                              .map((char) => (
+                                <button
+                                  key={char.id}
+                                  onClick={() =>
+                                    addDialogueToBeat(act.id, beat.id, char.id)
+                                  }
+                                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] uppercase font-black tracking-widest border border-yot-accent hover:border-yot-secondary hover:bg-yot-accent transition-all text-yot-primary"
+                                >
+                                  <Plus size={12} /> {char.name}
+                                </button>
+                              ))}
                             {beat.characterIds.length === 0 && (
-                              <p className="text-xs italic text-slate-400">Assign characters to this beat in the Outline to start scripting.</p>
+                              <p className="text-xs italic text-slate-400">
+                                Assign characters to this beat in the Outline to
+                                start scripting.
+                              </p>
                             )}
                           </div>
                         </div>
@@ -1456,7 +1808,10 @@ export default function App() {
             >
               <div className="flex justify-between items-center">
                 <h2 className="text-4xl text-yot-primary">Storyboard</h2>
-                <button onClick={addPage} className="yot-btn-primary flex items-center gap-2">
+                <button
+                  onClick={addPage}
+                  className="yot-btn-primary flex items-center gap-2"
+                >
                   <Plus size={16} /> New Page
                 </button>
               </div>
@@ -1465,27 +1820,33 @@ export default function App() {
                 {chapter.pages.map((page) => (
                   <div key={page.id} className="space-y-8">
                     <div className="flex justify-between items-center border-b border-yot-accent pb-4">
-                      <h3 className="text-2xl text-yot-primary">Page {page.pageNumber}</h3>
+                      <h3 className="text-2xl text-yot-primary">
+                        Page {page.pageNumber}
+                      </h3>
                       <div className="flex items-center gap-6">
                         <div className="flex items-center gap-3">
                           <Grid size={16} className="text-yot-secondary" />
-                          <select 
+                          <select
                             value={page.panelCount}
-                            onChange={(e) => updatePage(page.id, parseInt(e.target.value))}
+                            onChange={(e) =>
+                              updatePage(page.id, parseInt(e.target.value))
+                            }
                             className="bg-transparent border-none outline-none font-cinzel font-black text-xs uppercase tracking-widest text-yot-primary"
                           >
-                            {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
-                              <option key={n} value={n}>{n} Panels</option>
+                            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                              <option key={n} value={n}>
+                                {n} Panels
+                              </option>
                             ))}
                           </select>
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Manga Page Thumbnail */}
                     <div className="manga-page-container aspect-[1/1.414] bg-white border-8 border-yot-dark shadow-2xl relative overflow-hidden group/page">
                       {page.panels.map((panel, idx) => (
-                        <StoryboardPanel 
+                        <StoryboardPanel
                           key={panel.id}
                           pageId={page.id}
                           panel={panel}
@@ -1498,20 +1859,22 @@ export default function App() {
                           deleteBubble={deleteBubble}
                           maxZIndex={maxZIndex}
                           setMaxZIndex={setMaxZIndex}
-                          otherPanels={page.panels.filter(p => p.id !== panel.id)}
+                          otherPanels={page.panels.filter(
+                            (p) => p.id !== panel.id,
+                          )}
                         />
                       ))}
-                      
+
                       {/* Add/Clear Panel Buttons Overlay */}
                       <div className="absolute top-4 right-4 z-50 flex flex-col gap-2 opacity-0 group-hover/page:opacity-100 transition-opacity">
-                        <button 
+                        <button
                           onClick={() => addPanelToPage(page.id)}
                           className="w-12 h-12 bg-yot-primary text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
                           title="Add Panel to Page"
                         >
                           <Plus size={24} />
                         </button>
-                        <button 
+                        <button
                           onClick={() => clearPage(page.id)}
                           className="w-12 h-12 bg-red-500 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
                           title="Clear Page"
@@ -1521,7 +1884,7 @@ export default function App() {
                       </div>
                     </div>
                     <div className="flex justify-end">
-                      <button 
+                      <button
                         onClick={() => setPageToDelete(page.id)}
                         className="text-slate-300 hover:text-red-500 flex items-center gap-2 text-xs font-black uppercase tracking-widest transition-colors"
                       >
@@ -1531,11 +1894,14 @@ export default function App() {
                   </div>
                 ))}
               </div>
-              
+
               {chapter.pages.length === 0 && (
                 <div className="yot-card py-32 text-center">
                   <Layout size={64} className="text-yot-accent mx-auto mb-6" />
-                  <p className="text-xl text-slate-400 font-light italic">Your storyboard is empty. Create your first page to start layouting.</p>
+                  <p className="text-xl text-slate-400 font-light italic">
+                    Your storyboard is empty. Create your first page to start
+                    layouting.
+                  </p>
                 </div>
               )}
             </motion.div>
@@ -1546,13 +1912,13 @@ export default function App() {
       {/* Confirmation Modal */}
       <AnimatePresence>
         {pageToDelete && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-yot-dark/80 backdrop-blur-sm"
           >
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
@@ -1564,17 +1930,18 @@ export default function App() {
               <div className="space-y-4">
                 <h3 className="text-3xl text-yot-primary">Delete Page?</h3>
                 <p className="text-slate-500 font-light italic">
-                  Are you sure you want to delete this page? This action cannot be undone and all panel data will be lost.
+                  Are you sure you want to delete this page? This action cannot
+                  be undone and all panel data will be lost.
                 </p>
               </div>
               <div className="flex gap-4">
-                <button 
+                <button
                   onClick={() => setPageToDelete(null)}
                   className="flex-1 px-6 py-4 rounded-2xl border border-slate-200 text-slate-400 font-black uppercase tracking-widest hover:bg-slate-50 transition-colors"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   onClick={() => deletePage(pageToDelete)}
                   className="flex-1 px-6 py-4 rounded-2xl bg-red-600 text-white font-black uppercase tracking-widest hover:bg-red-700 transition-colors shadow-lg shadow-red-200"
                 >
