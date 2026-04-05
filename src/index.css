@@ -1,18 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Inter:wght@100..900&display=swap');
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-cinzel: "Cinzel", serif;
-  --color-yot-bg: #F8FDFF;
-  --color-yot-primary: #016F93;
-  --color-yot-secondary: #1192A3;
-  --color-yot-accent: #E1F6FA;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-cinzel: 'Cinzel', serif;
+  --color-yot-bg: #f8fdff;
+  --color-yot-primary: #016f93;
+  --color-yot-secondary: #1192a3;
+  --color-yot-accent: #e1f6fa;
   --color-yot-dark: #020810;
   --color-yot-editor-bg: #121212;
-  --color-yot-editor-card: #1E1E1E;
-  --color-yot-editor-border: #2A2A2A;
-  --color-yot-editor-text: #E0E0E0;
+  --color-yot-editor-card: #1e1e1e;
+  --color-yot-editor-border: #2a2a2a;
+  --color-yot-editor-text: #e0e0e0;
   --color-yot-editor-muted: #808080;
 }
 
@@ -20,8 +20,13 @@
   body {
     @apply bg-yot-bg text-slate-600 font-sans selection:bg-yot-secondary selection:text-white;
   }
-  
-  h1, h2, h3, h4, h5, h6 {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-cinzel font-black uppercase tracking-tighter;
   }
 }
@@ -69,7 +74,9 @@
 .storyboard-dark .yot-card {
   @apply bg-yot-editor-card border-yot-editor-border shadow-none rounded-2xl;
 }
-.storyboard-dark h2, .storyboard-dark h3, .storyboard-dark h4 {
+.storyboard-dark h2,
+.storyboard-dark h3,
+.storyboard-dark h4 {
   @apply text-yot-editor-text;
 }
 .storyboard-dark .text-slate-400 {

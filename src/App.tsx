@@ -21,6 +21,7 @@ import {
   MapPin,
   Users,
   Settings,
+  Image as ImageIcon,
   Sparkles,
   ArrowRight,
 } from 'lucide-react';
@@ -226,36 +227,46 @@ function StoryboardBubble({
       onMouseDown={startDragging}
     >
       {/* Bubble Body */}
-      <div className="w-full h-full bg-white border-2 border-yot-dark rounded-[20px] p-2 flex flex-col items-center justify-center shadow-md relative overflow-hidden">
-        <div className="flex flex-col gap-0.5 w-full h-full justify-center items-center overflow-hidden">
+      <div className="w-full h-full bg-white border-3 border-yot-dark rounded-[20px] p-2 flex flex-col items-center justify-center shadow-lg relative overflow-auto">
+        <div className="flex flex-col gap-1 w-full h-full justify-start items-center overflow-y-auto">
           {dialogue && (
-            <p className="text-[9px] font-black uppercase tracking-widest text-blue-500 truncate w-full text-center">
+            <p className="text-[12px] font-black uppercase tracking-widest text-blue-600 w-full text-center line-clamp-2 shrink-0">
               {character?.name || 'Unknown'}
             </p>
           )}
-          <select
-            value={bubble.dialogueId}
-            onChange={(e) =>
-              updateBubble(pageId, panelId, bubble.id, {
-                dialogueId: e.target.value,
-              })
-            }
-            onMouseDown={(e) => e.stopPropagation()}
-            className="w-full bg-transparent border-none outline-none text-[11px] font-medium text-yot-dark text-center leading-tight appearance-none cursor-pointer"
-          >
-            <option value="">Select Dialogue</option>
-            {chapter.acts
-              .flatMap((a) => a.beats)
-              .flatMap((b) => b.dialogue)
-              .map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.text}
-                </option>
-              ))}
-          </select>
-          {!bubble.dialogueId && (
-            <span className="text-[10px] text-slate-300 italic">Empty</span>
-          )}
+          <div className="relative w-full flex-1 flex flex-col items-center justify-start">
+            {dialogue ? (
+              <p className="text-[12px] font-medium text-yot-dark text-center leading-snug break-words whitespace-pre-wrap w-full">
+                {dialogue.text || (
+                  <span className="text-slate-300 italic">...</span>
+                )}
+              </p>
+            ) : (
+              <span className="text-[10px] text-slate-300 italic mt-1">
+                Select Dialogue
+              </span>
+            )}
+            <select
+              value={bubble.dialogueId}
+              onChange={(e) =>
+                updateBubble(pageId, panelId, bubble.id, {
+                  dialogueId: e.target.value,
+                })
+              }
+              onMouseDown={(e) => e.stopPropagation()}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            >
+              <option value="">Select Dialogue</option>
+              {chapter.acts
+                .flatMap((a) => a.beats)
+                .flatMap((b) => b.dialogue)
+                .map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.text}
+                  </option>
+                ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -284,7 +295,6 @@ function StoryboardBubble({
   );
 }
 
-// --- STORYBOARD PANEL COMPONENT ---
 interface StoryboardPanelProps {
   key?: string | number;
   pageId: string;
@@ -309,9 +319,11 @@ interface StoryboardPanelProps {
     updates: Partial<Bubble>,
   ) => void;
   deleteBubble: (pageId: string, panelId: string, bubbleId: string) => void;
+  deletePanel: (pageId: string, panelId: string) => void;
   maxZIndex: number;
   setMaxZIndex: (z: number) => void;
   otherPanels: Panel[];
+  setViewingImage: (img: string | null) => void;
 }
 
 function StoryboardPanel({
@@ -324,11 +336,47 @@ function StoryboardPanel({
   addBubbleToPanel,
   updateBubble,
   deleteBubble,
+  deletePanel,
   maxZIndex,
   setMaxZIndex,
   otherPanels,
+  setViewingImage,
 }: StoryboardPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_DIM = 800; // Cap width/height at 800px to not break localStorage
+          let { width: w, height: h } = img;
+          if (w > MAX_DIM || h > MAX_DIM) {
+            if (w > h) {
+              h *= MAX_DIM / w;
+              w = MAX_DIM;
+            } else {
+              w *= MAX_DIM / h;
+              h = MAX_DIM;
+            }
+          }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, w, h);
+          updatePanel(pageId, panel.id, {
+            referenceImage: canvas.toDataURL('image/jpeg', 0.7),
+          });
+        };
+        img.src = event.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleMouseDown = () => {
     const newZ = maxZIndex + 1;
@@ -595,7 +643,7 @@ function StoryboardPanel({
 
   return (
     <div
-      className="absolute bg-white border-2 border-yot-dark p-4 flex flex-col gap-2 group shadow-sm transition-shadow hover:shadow-md"
+      className="absolute bg-white border-4 border-yot-secondary p-4 flex flex-col gap-2 group shadow-lg transition-shadow hover:shadow-2xl hover:border-yot-primary cursor-grab active:cursor-grabbing"
       style={{
         left: `${panel.layoutData.x}%`,
         top: `${panel.layoutData.y}%`,
@@ -625,6 +673,28 @@ function StoryboardPanel({
           >
             <MessageSquare size={10} />
           </button>
+          <button
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              fileInputRef.current?.click();
+            }}
+            className="p-0.5 bg-blue-400 text-white rounded hover:bg-blue-600 transition-colors"
+            title="Upload Reference Image"
+          >
+            <ImageIcon size={10} />
+          </button>
+          <button
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              deletePanel(pageId, panel.id);
+            }}
+            className="p-0.5 bg-red-400 text-white rounded hover:bg-red-600 transition-colors"
+            title="Delete Panel"
+          >
+            <Trash2 size={10} />
+          </button>
         </div>
         <Maximize2
           size={10}
@@ -632,14 +702,21 @@ function StoryboardPanel({
         />
       </div>
 
-      <div className="flex-1 relative manga-panel-content">
+      <div className="flex-1 relative manga-panel-content" ref={containerRef}>
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          ref={fileInputRef}
+          onChange={handleImageUpload}
+        />
         <textarea
           value={panel.composition}
           onChange={(e) =>
             updatePanel(pageId, panel.id, { composition: e.target.value })
           }
           placeholder="Action/Composition..."
-          className="w-full h-full bg-transparent border-none outline-none resize-none text-[14px] text-slate-500 font-light leading-tight"
+          className="w-full h-full bg-transparent border-none outline-none resize-none text-[14px] text-slate-500 font-light leading-tight relative z-10"
         />
 
         {/* Speech Bubbles */}
@@ -654,6 +731,34 @@ function StoryboardPanel({
             deleteBubble={deleteBubble}
           />
         ))}
+
+        {/* Reference Image Thumbnail */}
+        {panel.referenceImage && (
+          <motion.div
+            drag
+            dragConstraints={containerRef}
+            dragMomentum={false}
+            className="absolute bottom-2 left-2 w-16 h-16 z-30 cursor-pointer group/ref"
+            onClick={() => setViewingImage(panel.referenceImage!)}
+            title="Click to view, drag to move"
+          >
+            <img
+              src={panel.referenceImage}
+              className="w-full h-full object-cover rounded border-2 border-yot-secondary shadow-md pointer-events-none"
+              alt="Reference"
+            />
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                updatePanel(pageId, panel.id, { referenceImage: undefined });
+              }}
+              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover/ref:opacity-100 transition-opacity shadow-lg"
+              title="Remove Reference"
+            >
+              <Trash2 size={12} />
+            </button>
+          </motion.div>
+        )}
       </div>
 
       {/* Resize Handle (Bottom-Right) */}
@@ -674,6 +779,36 @@ function StoryboardPanel({
     </div>
   );
 }
+
+const loadHtmlToImage = (): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    if ((window as any).htmlToImage) {
+      resolve((window as any).htmlToImage);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src =
+      'https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js';
+    script.onload = () => resolve((window as any).htmlToImage);
+    script.onerror = () => reject(new Error('Failed to load html-to-image'));
+    document.head.appendChild(script);
+  });
+};
+
+const loadJSZip = (): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    if ((window as any).JSZip) {
+      resolve((window as any).JSZip);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src =
+      'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    script.onload = () => resolve((window as any).JSZip);
+    script.onerror = () => reject(new Error('Failed to load JSZip'));
+    document.head.appendChild(script);
+  });
+};
 
 export default function App() {
   const [chapters, setChapters] = useState<Chapter[]>(() => {
@@ -726,11 +861,149 @@ export default function App() {
     null,
   );
   const [isChapterListOpen, setIsChapterListOpen] = useState(false);
+  const [selectedDialogues, setSelectedDialogues] = useState<Set<string>>(
+    new Set(),
+  );
+  const [batchPageInput, setBatchPageInput] = useState<string>('');
+  const [draggedDialogueId, setDraggedDialogueId] = useState<string | null>(
+    null,
+  );
+  const [dragOverDialogueId, setDragOverDialogueId] = useState<string | null>(
+    null,
+  );
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('noswrite-chapters', JSON.stringify(chapters));
     localStorage.setItem('noswrite-active-chapter-id', activeChapterId);
   }, [chapters, activeChapterId]);
+
+  const handleSave = () => {
+    setIsSaving(true);
+    localStorage.setItem('noswrite-chapters', JSON.stringify(chapters));
+    localStorage.setItem('noswrite-active-chapter-id', activeChapterId);
+    setTimeout(() => setIsSaving(false), 2000);
+  };
+
+  const handleExport = async () => {
+    setIsExporting(true);
+
+    try {
+      const JSZip = await loadJSZip();
+      const zip = new JSZip();
+
+      // 1. Generate text script
+      let content = `${chapter.title.toUpperCase()}\n`;
+      content += `=========================================\n\n`;
+
+      chapter.acts.forEach((act) => {
+        const location =
+          chapter.locations.find((l) => l.id === act.locationId)?.name ||
+          'Unknown Location';
+        content += `[ ${act.title.toUpperCase()} - ${location.toUpperCase()} ]\n\n`;
+
+        act.beats.forEach((beat) => {
+          content += `--- ${beat.title.toUpperCase()} ---\n`;
+          if (beat.description) {
+            content += `${beat.description}\n\n`;
+          }
+
+          beat.dialogue.forEach((diag) => {
+            const char = chapter.characters.find(
+              (c) => c.id === diag.characterId,
+            );
+            const charName = char
+              ? char.name.toUpperCase()
+              : diag.characterId === 'action'
+                ? 'ACTION'
+                : 'UNKNOWN';
+
+            let meta = [];
+            if (diag.pageNumber) meta.push(`Page ${diag.pageNumber}`);
+            if (diag.panelNumber) meta.push(`Panel ${diag.panelNumber}`);
+            const metaStr = meta.length > 0 ? ` (${meta.join(', ')})` : '';
+
+            if (diag.characterId === 'action') {
+              content += `* ${diag.text}${metaStr}\n\n`;
+            } else {
+              content += `${charName}${metaStr}:\n`;
+              content += `"${diag.text}"\n\n`;
+            }
+          });
+        });
+      });
+
+      zip.file(
+        `${chapter.title.replace(/[^a-z0-9]/gi, '_') || 'Chapter'}_Script.txt`,
+        content,
+      );
+
+      // 2. Generate images
+      if (chapter.pages.length > 0) {
+        const previousTab = activeTab;
+        if (activeTab !== 'storyboard') {
+          setActiveTab('storyboard');
+          await new Promise((r) => setTimeout(r, 1000)); // Wait for render/animations
+        }
+
+        const htmlToImage = await loadHtmlToImage();
+        if (!htmlToImage) throw new Error('html-to-image failed to initialize');
+
+        const pages = document.querySelectorAll('.manga-page-container');
+
+        for (let i = 0; i < pages.length; i++) {
+          const pageEl = pages[i] as HTMLElement;
+          const originalBorder = pageEl.style.border;
+          const originalShadow = pageEl.style.boxShadow;
+
+          // Temporarily remove styles for a clean export
+          pageEl.style.border = 'none';
+          pageEl.style.boxShadow = 'none';
+
+          const dataUrl = await htmlToImage.toPng(pageEl, {
+            pixelRatio: 1.5,
+            backgroundColor: '#ffffff',
+            filter: (node: HTMLElement) => {
+              // Ignore UI overlay buttons/selects to avoid rendering errors
+              if (node.tagName === 'BUTTON' || node.tagName === 'SELECT') {
+                return false;
+              }
+              return true;
+            },
+          });
+
+          // Restore styles
+          pageEl.style.border = originalBorder;
+          pageEl.style.boxShadow = originalShadow;
+
+          const imgData = dataUrl.split(',')[1];
+          zip.file(`Page_${i + 1}.png`, imgData, { base64: true });
+        }
+
+        if (previousTab !== 'storyboard') {
+          setActiveTab(previousTab);
+        }
+      }
+
+      // 3. Download the ZIP file
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${chapter.title.replace(/[^a-z0-9]/gi, '_') || 'Chapter'}_Export.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error('Failed to export:', err);
+      alert(`Export failed: ${err.message || 'Check console for details.'}`);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const addChapter = () => {
     const newChapter: Chapter = {
@@ -938,34 +1211,57 @@ export default function App() {
     actId: string,
     beatId: string,
     characterId: string,
+    startNewPage: boolean = false,
   ) => {
-    const newDialogue: Dialogue = {
-      id: `diag-${Date.now()}`,
-      characterId,
-      text: '',
-    };
     setChapter((prev) => ({
       ...prev,
       acts: prev.acts.map((act) =>
         act.id === actId
           ? {
               ...act,
-              beats: act.beats.map((beat) =>
-                beat.id === beatId
-                  ? { ...beat, dialogue: [...beat.dialogue, newDialogue] }
-                  : beat,
-              ),
+              beats: act.beats.map((beat) => {
+                if (beat.id === beatId) {
+                  const lastDiag = beat.dialogue[beat.dialogue.length - 1];
+
+                  let nextMaxPage = 1;
+                  if (startNewPage) {
+                    let maxVal = 0;
+                    prev.acts.forEach((a) =>
+                      a.beats.forEach((b) =>
+                        b.dialogue.forEach((d) => {
+                          if (d.pageNumber && d.pageNumber > maxVal) {
+                            maxVal = d.pageNumber;
+                          }
+                        }),
+                      ),
+                    );
+                    nextMaxPage = maxVal + 1;
+                  } else {
+                    nextMaxPage = lastDiag?.pageNumber || 1;
+                  }
+
+                  const newDialogue: Dialogue = {
+                    id: `diag-${Date.now()}`,
+                    characterId,
+                    text: '',
+                    pageNumber: nextMaxPage,
+                  };
+                  return { ...beat, dialogue: [...beat.dialogue, newDialogue] };
+                }
+                return beat;
+              }),
             }
           : act,
       ),
     }));
   };
-
   const updateDialogue = (
     actId: string,
     beatId: string,
     dialogueId: string,
     text: string,
+    pageNumber?: number,
+    panelNumber?: number,
   ) => {
     setChapter((prev) => ({
       ...prev,
@@ -978,11 +1274,72 @@ export default function App() {
                   ? {
                       ...beat,
                       dialogue: beat.dialogue.map((d) =>
-                        d.id === dialogueId ? { ...d, text } : d,
+                        d.id === dialogueId
+                          ? { ...d, text, pageNumber, panelNumber }
+                          : d,
                       ),
                     }
                   : beat,
               ),
+            }
+          : act,
+      ),
+    }));
+  };
+
+  const updateDialogueCharacter = (
+    actId: string,
+    beatId: string,
+    dialogueId: string,
+    characterId: string,
+  ) => {
+    setChapter((prev) => ({
+      ...prev,
+      acts: prev.acts.map((act) =>
+        act.id === actId
+          ? {
+              ...act,
+              beats: act.beats.map((beat) =>
+                beat.id === beatId
+                  ? {
+                      ...beat,
+                      dialogue: beat.dialogue.map((d) =>
+                        d.id === dialogueId ? { ...d, characterId } : d,
+                      ),
+                    }
+                  : beat,
+              ),
+            }
+          : act,
+      ),
+    }));
+  };
+
+  const updateDialogueGroupPage = (
+    actId: string,
+    beatId: string,
+    startIndex: number,
+    newPage?: number,
+  ) => {
+    setChapter((prev) => ({
+      ...prev,
+      acts: prev.acts.map((act) =>
+        act.id === actId
+          ? {
+              ...act,
+              beats: act.beats.map((beat) => {
+                if (beat.id !== beatId) return beat;
+                const originalPage = beat.dialogue[startIndex].pageNumber;
+                const newDialogue = [...beat.dialogue];
+                for (let i = startIndex; i < newDialogue.length; i++) {
+                  if (newDialogue[i].pageNumber === originalPage) {
+                    newDialogue[i] = { ...newDialogue[i], pageNumber: newPage };
+                  } else {
+                    break;
+                  }
+                }
+                return { ...beat, dialogue: newDialogue };
+              }),
             }
           : act,
       ),
@@ -1010,6 +1367,262 @@ export default function App() {
                     }
                   : beat,
               ),
+            }
+          : act,
+      ),
+    }));
+  };
+
+  const batchAssignPage = (pageNumber: number) => {
+    if (selectedDialogues.size === 0) return;
+
+    setChapter((prev) => ({
+      ...prev,
+      acts: prev.acts.map((act) => {
+        let hasChanges = false;
+        const updatedAct = {
+          ...act,
+          beats: act.beats.map((beat) => {
+            const updatedBeat = {
+              ...beat,
+              dialogue: beat.dialogue.map((d) => {
+                if (selectedDialogues.has(d.id)) {
+                  hasChanges = true;
+                  return { ...d, pageNumber };
+                }
+                return d;
+              }),
+            };
+            return updatedBeat;
+          }),
+        };
+        return updatedAct;
+      }),
+    }));
+
+    setSelectedDialogues(new Set());
+    setBatchPageInput('');
+  };
+
+  // Auto-generate panels and bubbles from dialogue assignments
+  const getAutoPopulatedPages = (): Page[] => {
+    const pageMap = new Map<number, Map<number, Dialogue[]>>();
+
+    // Collect all dialogue assigned to pages and panels
+    chapter.acts.forEach((act) => {
+      act.beats.forEach((beat) => {
+        beat.dialogue.forEach((diag) => {
+          if (diag.pageNumber) {
+            if (!pageMap.has(diag.pageNumber)) {
+              pageMap.set(diag.pageNumber, new Map());
+            }
+            const panelNum = diag.panelNumber || 1;
+            if (!pageMap.get(diag.pageNumber)!.has(panelNum)) {
+              pageMap.get(diag.pageNumber)!.set(panelNum, []);
+            }
+            pageMap.get(diag.pageNumber)!.get(panelNum)!.push(diag);
+          }
+        });
+      });
+    });
+
+    // Generate pages with populated panels and bubbles
+    const generatedPages: Page[] = [];
+    pageMap.forEach((panelMap, pageNum) => {
+      const panelCount = panelMap.size;
+      const panels: Panel[] = [];
+      let panelIndex = 0;
+
+      panelMap.forEach((dialogues, panelNum) => {
+        // Calculate panel height based on number of panels per page
+        // For 1 panel: 100%, for 2 panels: 48% each with 2% gap, for 3+: divide equally
+        let panelHeight = 100;
+        let panelY = 0;
+
+        if (panelCount === 1) {
+          panelHeight = 100;
+          panelY = 0;
+        } else if (panelCount === 2) {
+          panelHeight = 48;
+          panelY = panelIndex * (panelHeight + 2);
+        } else if (panelCount === 3) {
+          panelHeight = 31;
+          panelY = panelIndex * (panelHeight + 1.5);
+        } else {
+          // For 4+ panels, distribute evenly with small gaps
+          const gap = 1;
+          panelHeight = (100 - (panelCount - 1) * gap) / panelCount;
+          panelY = panelIndex * (panelHeight + gap);
+        }
+
+        // Generate bubbles with better spacing
+        const bubblesPerPanel = dialogues.length;
+        const bubbles: Bubble[] = dialogues.map((diag, idx) => {
+          let bubbleHeight = 15;
+          let bubbleY = 5;
+
+          if (bubblesPerPanel === 1) {
+            bubbleHeight = 80;
+            bubbleY = 10;
+          } else if (bubblesPerPanel === 2) {
+            bubbleHeight = 38;
+            bubbleY = 5 + idx * (bubbleHeight + 3);
+          } else if (bubblesPerPanel <= 4) {
+            bubbleHeight = 20;
+            bubbleY = 5 + idx * (bubbleHeight + 2);
+          } else {
+            bubbleHeight =
+              (100 - 10 - (bubblesPerPanel - 1) * 2) / bubblesPerPanel;
+            bubbleY = 5 + idx * (bubbleHeight + 2);
+          }
+
+          return {
+            id: `bubble-${diag.id}`,
+            dialogueId: diag.id,
+            x: 5,
+            y: bubbleY,
+            w: 90,
+            h: bubbleHeight,
+          };
+        });
+
+        panels.push({
+          id: `panel-${pageNum}-${panelNum}`,
+          composition: '',
+          bubbles,
+          layoutData: {
+            x: 0,
+            y: panelY,
+            w: 100,
+            h: panelHeight,
+            zIndex: panelNum,
+          },
+        });
+
+        panelIndex++;
+      });
+
+      generatedPages.push({
+        id: `page-${pageNum}`,
+        pageNumber: pageNum,
+        panelCount: panels.length,
+        panels,
+      });
+    });
+
+    return generatedPages.sort((a, b) => a.pageNumber - b.pageNumber);
+  };
+
+  const syncStoryboard = () => {
+    const autoPages = getAutoPopulatedPages();
+    setChapter((prev) => {
+      const mergedPages = autoPages.map((autoPage) => {
+        const existingPage = prev.pages.find((p) => p.id === autoPage.id);
+        if (!existingPage) return autoPage;
+
+        const mergedPanels = autoPage.panels.map((autoPanel) => {
+          const existingPanel = existingPage.panels.find(
+            (p) => p.id === autoPanel.id,
+          );
+          if (!existingPanel) return autoPanel;
+
+          const mergedBubbles = autoPanel.bubbles.map((autoBubble) => {
+            const existingBubble = existingPanel.bubbles.find(
+              (b) => b.id === autoBubble.id,
+            );
+            return existingBubble
+              ? {
+                  ...autoBubble,
+                  x: existingBubble.x,
+                  y: existingBubble.y,
+                  w: existingBubble.w,
+                  h: existingBubble.h,
+                }
+              : autoBubble;
+          });
+
+          const manualBubbles = existingPanel.bubbles.filter(
+            (eb) => !autoPanel.bubbles.some((ab) => ab.id === eb.id),
+          );
+
+          return {
+            ...autoPanel,
+            composition: existingPanel.composition,
+            layoutData: existingPanel.layoutData, // Preserves manual dragging and sizing
+            bubbles: [...mergedBubbles, ...manualBubbles],
+          };
+        });
+
+        const manualPanels = existingPage.panels.filter(
+          (ep) => !autoPage.panels.some((ap) => ap.id === ep.id),
+        );
+
+        return {
+          ...autoPage,
+          panelCount: Math.max(autoPage.panelCount, existingPage.panelCount),
+          panels: [...mergedPanels, ...manualPanels],
+        };
+      });
+
+      const manualPages = prev.pages.filter(
+        (ep) => !autoPages.some((ap) => ap.id === ep.id),
+      );
+
+      return {
+        ...prev,
+        pages: [...mergedPages, ...manualPages].sort(
+          (a, b) => a.pageNumber - b.pageNumber,
+        ),
+      };
+    });
+  };
+
+  const reorderDialogue = (
+    actId: string,
+    beatId: string,
+    draggedId: string,
+    targetId: string,
+  ) => {
+    setChapter((prev) => ({
+      ...prev,
+      acts: prev.acts.map((act) =>
+        act.id === actId
+          ? {
+              ...act,
+              beats: act.beats.map((beat) => {
+                if (beat.id !== beatId) return beat;
+
+                // Robust reorder: track original positions to determine drag direction
+                const original = beat.dialogue;
+                const draggedIndex = original.findIndex(
+                  (d) => d.id === draggedId,
+                );
+                const targetIndex = original.findIndex(
+                  (d) => d.id === targetId,
+                );
+
+                if (draggedIndex === -1 || targetIndex === -1) return beat;
+
+                // Build new array without dragged item
+                const filtered = original.filter((d) => d.id !== draggedId);
+
+                // Find index of target in the filtered array
+                const targetIndexInFiltered = filtered.findIndex(
+                  (d) => d.id === targetId,
+                );
+
+                // Insert after target when dragging down, before when dragging up
+                const insertIndex =
+                  draggedIndex < targetIndex
+                    ? targetIndexInFiltered + 1
+                    : targetIndexInFiltered;
+
+                // Insert dragged item at computed index
+                const draggedItem = original[draggedIndex];
+                filtered.splice(insertIndex, 0, draggedItem);
+
+                return { ...beat, dialogue: filtered };
+              }),
             }
           : act,
       ),
@@ -1197,6 +1810,21 @@ export default function App() {
     }));
   };
 
+  const deletePanel = (pageId: string, panelId: string) => {
+    setChapter((prev) => ({
+      ...prev,
+      pages: prev.pages.map((p) =>
+        p.id === pageId
+          ? {
+              ...p,
+              panels: p.panels.filter((pan) => pan.id !== panelId),
+              panelCount: Math.max(0, p.panelCount - 1),
+            }
+          : p,
+      ),
+    }));
+  };
+
   const addPanelToPage = (pageId: string) => {
     setChapter((prev) => ({
       ...prev,
@@ -1319,11 +1947,18 @@ export default function App() {
             />
           </div>
           <div className="flex gap-4">
-            <button className="yot-btn-outline !border-white !text-white hover:!bg-white hover:!text-yot-dark flex items-center gap-2">
-              <Save size={16} /> Save
+            <button
+              onClick={handleSave}
+              className="yot-btn-outline !border-white !text-white hover:!bg-white hover:!text-yot-dark flex items-center justify-center gap-2 w-28 transition-all"
+            >
+              <Save size={16} /> {isSaving ? 'Saved!' : 'Save'}
             </button>
-            <button className="yot-btn-primary bg-white !text-yot-dark hover:!bg-yot-accent flex items-center gap-2">
-              <Download size={16} /> Export
+            <button
+              onClick={handleExport}
+              disabled={isExporting}
+              className={`yot-btn-primary bg-white !text-yot-dark flex items-center gap-2 ${isExporting ? 'opacity-50 cursor-not-allowed' : 'hover:!bg-yot-accent'}`}
+            >
+              <Download size={16} /> {isExporting ? 'Exporting...' : 'Export'}
             </button>
           </div>
         </div>
@@ -1706,89 +2341,303 @@ export default function App() {
                         </h4>
 
                         <div className="space-y-8">
-                          {beat.dialogue.map((diag) => {
+                          {/* Render dialogue in flat order; headers inserted when page changes */}
+                          {beat.dialogue.map((diag, index) => {
+                            const prevPage =
+                              index > 0
+                                ? beat.dialogue[index - 1].pageNumber
+                                : null;
+                            const currentPage = diag.pageNumber || null;
                             const char = chapter.characters.find(
                               (c) => c.id === diag.characterId,
                             );
+                            // Show header when page changes (and current page exists, or it's the first unassigned line)
+                            const showHeader =
+                              currentPage !== prevPage &&
+                              (currentPage || index === 0);
                             return (
-                              <div
-                                key={diag.id}
-                                className="flex gap-8 items-start group"
-                              >
-                                <div className="w-32 shrink-0 text-right">
-                                  <div
-                                    className="font-cinzel font-black text-xs uppercase tracking-[0.2em] mb-1"
-                                    style={{ color: char?.color || 'inherit' }}
-                                  >
-                                    {char?.name || 'Unknown'}
+                              <div key={diag.id}>
+                                {showHeader && currentPage && (
+                                  <div className="flex items-center gap-3 px-3 py-1 bg-yot-secondary/10 rounded-lg w-fit border border-yot-secondary/20 mb-4">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-yot-secondary flex items-center gap-2">
+                                      Page
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        value={currentPage}
+                                        onChange={(e) => {
+                                          const val = parseInt(e.target.value);
+                                          updateDialogueGroupPage(
+                                            act.id,
+                                            beat.id,
+                                            index,
+                                            isNaN(val) ? undefined : val,
+                                          );
+                                        }}
+                                        className="w-12 bg-transparent border-b border-yot-secondary/50 outline-none text-center focus:border-yot-secondary"
+                                      />
+                                    </span>
                                   </div>
-                                  <div
-                                    className="w-full h-1 rounded-full"
-                                    style={{
-                                      backgroundColor: char?.color || '#eee',
-                                      opacity: 0.3,
-                                    }}
-                                  />
-                                </div>
-                                <div className="flex-1 relative">
-                                  <textarea
-                                    value={diag.text}
-                                    onChange={(e) =>
-                                      updateDialogue(
-                                        act.id,
-                                        beat.id,
-                                        diag.id,
-                                        e.target.value,
-                                      )
+                                )}
+                                {showHeader && !currentPage && index === 0 && (
+                                  <div className="flex items-center gap-3 px-3 py-1 bg-slate-300/10 rounded-lg w-fit border border-slate-300/20 mb-4">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                      Unassigned
+                                    </span>
+                                  </div>
+                                )}
+                                <div
+                                  className={`relative flex gap-8 items-start group cursor-move transition-all ${draggedDialogueId === diag.id ? 'opacity-50 bg-yot-accent/10 rounded-lg p-2' : ''}`}
+                                  draggable
+                                  onDragStart={(e) => {
+                                    e.dataTransfer.setData(
+                                      'text/plain',
+                                      diag.id,
+                                    );
+                                    setDraggedDialogueId(diag.id);
+                                  }}
+                                  onDragOver={(e) => {
+                                    e.preventDefault();
+                                    if (
+                                      draggedDialogueId &&
+                                      draggedDialogueId !== diag.id
+                                    ) {
+                                      setDragOverDialogueId(diag.id);
                                     }
-                                    placeholder="Type dialogue line..."
-                                    className="w-full bg-transparent border-none outline-none resize-none text-lg text-slate-600 font-light leading-relaxed italic"
-                                    rows={1}
-                                    onInput={(e) => {
-                                      const target =
-                                        e.target as HTMLTextAreaElement;
-                                      target.style.height = 'auto';
-                                      target.style.height =
-                                        target.scrollHeight + 'px';
-                                    }}
-                                  />
-                                  <button
-                                    onClick={() =>
-                                      deleteDialogue(act.id, beat.id, diag.id)
+                                  }}
+                                  onDragLeave={() =>
+                                    setDragOverDialogueId(null)
+                                  }
+                                  onDrop={(e) => {
+                                    e.preventDefault();
+                                    const draggedIdFromTransfer =
+                                      e.dataTransfer.getData('text/plain');
+                                    const draggedId =
+                                      draggedDialogueId ||
+                                      draggedIdFromTransfer;
+                                    if (!draggedId || draggedId === diag.id) {
+                                      setDraggedDialogueId(null);
+                                      setDragOverDialogueId(null);
+                                      return;
                                     }
-                                    className="absolute -right-8 top-1 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  >
-                                    <Trash2 size={14} />
-                                  </button>
+                                    reorderDialogue(
+                                      act.id,
+                                      beat.id,
+                                      draggedId,
+                                      diag.id,
+                                    );
+                                    setDraggedDialogueId(null);
+                                    setDragOverDialogueId(null);
+                                  }}
+                                  onDragEnd={() => {
+                                    setDraggedDialogueId(null);
+                                    setDragOverDialogueId(null);
+                                  }}
+                                >
+                                  {/* Insert indicator (subtle) */}
+                                  {dragOverDialogueId === diag.id && (
+                                    <div className="absolute left-3 right-3 -top-2 h-1 rounded-lg pointer-events-none bg-gradient-to-r from-yot-secondary/60 to-transparent opacity-90 transition-all" />
+                                  )}
+                                  <div className="w-32 shrink-0 text-right flex flex-col items-end">
+                                    <select
+                                      value={diag.characterId || ''}
+                                      onChange={(e) =>
+                                        updateDialogueCharacter(
+                                          act.id,
+                                          beat.id,
+                                          diag.id,
+                                          e.target.value,
+                                        )
+                                      }
+                                      className="font-cinzel font-black text-xs uppercase tracking-[0.2em] mb-1 bg-transparent border-none outline-none cursor-pointer text-right appearance-none hover:text-yot-secondary transition-colors"
+                                      style={{
+                                        color:
+                                          char?.color ||
+                                          (diag.characterId === 'action'
+                                            ? '#94a3b8'
+                                            : 'inherit'),
+                                      }}
+                                    >
+                                      <option value="" disabled>
+                                        SELECT ROLE
+                                      </option>
+                                      <option
+                                        value="action"
+                                        className="text-slate-500"
+                                      >
+                                        ACTION / NOTE
+                                      </option>
+                                      {chapter.characters.map((c) => (
+                                        <option
+                                          key={c.id}
+                                          value={c.id}
+                                          style={{ color: c.color }}
+                                        >
+                                          {c.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <div
+                                      className="w-full h-1 rounded-full mt-1"
+                                      style={{
+                                        backgroundColor:
+                                          char?.color ||
+                                          (diag.characterId === 'action'
+                                            ? '#cbd5e1'
+                                            : '#eee'),
+                                        opacity: 0.5,
+                                      }}
+                                    />
+                                  </div>
+                                  <div className="flex-1 relative">
+                                    <div className="flex gap-4 mb-3 items-start">
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedDialogues.has(diag.id)}
+                                        onChange={(e) => {
+                                          const newSelected = new Set(
+                                            selectedDialogues,
+                                          );
+                                          if (e.target.checked) {
+                                            newSelected.add(diag.id);
+                                          } else {
+                                            newSelected.delete(diag.id);
+                                          }
+                                          setSelectedDialogues(newSelected);
+                                        }}
+                                        className="mt-1 w-4 h-4 rounded border-yot-accent cursor-pointer"
+                                      />
+                                      <div className="flex-1 flex flex-col gap-2">
+                                        <textarea
+                                          value={diag.text}
+                                          onChange={(e) =>
+                                            updateDialogue(
+                                              act.id,
+                                              beat.id,
+                                              diag.id,
+                                              e.target.value,
+                                              diag.pageNumber,
+                                              diag.panelNumber,
+                                            )
+                                          }
+                                          placeholder={
+                                            diag.characterId === 'action'
+                                              ? 'Scene description, action, or panel notes...'
+                                              : 'Type dialogue line...'
+                                          }
+                                          className={`w-full bg-transparent border-none outline-none resize-none text-lg font-light leading-relaxed ${diag.characterId === 'action' ? 'text-slate-500 not-italic' : 'text-slate-600 italic'}`}
+                                          rows={1}
+                                          onInput={(e) => {
+                                            const target =
+                                              e.target as HTMLTextAreaElement;
+                                            target.style.height = 'auto';
+                                            target.style.height =
+                                              target.scrollHeight + 'px';
+                                          }}
+                                        />
+                                      </div>
+                                    </div>
+                                    <button
+                                      onClick={() =>
+                                        deleteDialogue(act.id, beat.id, diag.id)
+                                      }
+                                      className="absolute -right-2 top-0 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                      <Trash2 size={20} />
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
                             );
-                          })}
+                          })}{' '}
+                          <div className="flex flex-col gap-4 pt-6 border-t border-yot-accent/50">
+                            <div className="flex flex-wrap gap-3 items-center">
+                              <button
+                                onClick={() =>
+                                  addDialogueToBeat(act.id, beat.id, '', true)
+                                }
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] uppercase font-black tracking-widest bg-yot-secondary text-white hover:bg-yot-primary transition-all shadow-sm"
+                              >
+                                <FileText size={14} /> Add Blank Page
+                              </button>
 
-                          <div className="flex flex-wrap gap-3 pt-6 border-t border-yot-accent/50">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 self-center mr-2">
-                              Add Line:
-                            </span>
-                            {chapter.characters
-                              .filter((c) => beat.characterIds.includes(c.id))
-                              .map((char) => (
-                                <button
-                                  key={char.id}
-                                  onClick={() =>
-                                    addDialogueToBeat(act.id, beat.id, char.id)
-                                  }
-                                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] uppercase font-black tracking-widest border border-yot-accent hover:border-yot-secondary hover:bg-yot-accent transition-all text-yot-primary"
-                                >
-                                  <Plus size={12} /> {char.name}
-                                </button>
-                              ))}
-                            {beat.characterIds.length === 0 && (
-                              <p className="text-xs italic text-slate-400">
-                                Assign characters to this beat in the Outline to
-                                start scripting.
-                              </p>
-                            )}
+                              <div className="w-px h-6 bg-yot-accent mx-2 hidden md:block" />
+
+                              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                Add Line:
+                              </span>
+                              <button
+                                onClick={() =>
+                                  addDialogueToBeat(
+                                    act.id,
+                                    beat.id,
+                                    'action',
+                                    false,
+                                  )
+                                }
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] uppercase font-black tracking-widest border border-slate-200 hover:border-slate-400 transition-all text-slate-500"
+                              >
+                                <Plus size={12} /> Action/Note
+                              </button>
+                              {chapter.characters
+                                .filter((c) => beat.characterIds.includes(c.id))
+                                .map((char) => (
+                                  <button
+                                    key={char.id}
+                                    onClick={() =>
+                                      addDialogueToBeat(
+                                        act.id,
+                                        beat.id,
+                                        char.id,
+                                        false,
+                                      )
+                                    }
+                                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] uppercase font-black tracking-widest border border-yot-accent hover:border-yot-secondary hover:bg-yot-accent transition-all text-yot-primary"
+                                  >
+                                    <Plus size={12} /> {char.name}
+                                  </button>
+                                ))}
+                            </div>
                           </div>
+                          {selectedDialogues.size > 0 && (
+                            <div className="flex items-center gap-3 p-4 bg-yot-secondary/10 rounded-lg border border-yot-secondary/30">
+                              <span className="text-[10px] font-black uppercase tracking-widest text-yot-secondary">
+                                {selectedDialogues.size} Selected
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={batchPageInput}
+                                  onChange={(e) =>
+                                    setBatchPageInput(e.target.value)
+                                  }
+                                  placeholder="Page #"
+                                  className="w-20 px-2 py-1 border border-yot-secondary rounded bg-white text-sm font-bold text-yot-primary"
+                                />
+                                <button
+                                  onClick={() => {
+                                    if (batchPageInput) {
+                                      batchAssignPage(parseInt(batchPageInput));
+                                    }
+                                  }}
+                                  disabled={!batchPageInput}
+                                  className="px-4 py-1 bg-yot-secondary text-white rounded text-[10px] font-black uppercase tracking-widest hover:bg-yot-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  Assign
+                                </button>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  setSelectedDialogues(new Set());
+                                  setBatchPageInput('');
+                                }}
+                                className="ml-auto px-3 py-1 border border-slate-300 text-slate-400 rounded text-[10px] font-black uppercase tracking-widest hover:border-slate-400 hover:text-slate-600 transition-colors"
+                              >
+                                Clear
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -1808,106 +2657,129 @@ export default function App() {
             >
               <div className="flex justify-between items-center">
                 <h2 className="text-4xl text-yot-primary">Storyboard</h2>
-                <button
-                  onClick={addPage}
-                  className="yot-btn-primary flex items-center gap-2"
-                >
-                  <Plus size={16} /> New Page
-                </button>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={syncStoryboard}
+                    className="flex items-center gap-2 px-4 py-2 bg-yot-accent text-yot-primary font-bold rounded-xl hover:bg-yot-secondary hover:text-white transition-all text-sm"
+                    title="Sync pages and panels from assigned dialogue"
+                  >
+                    <Sparkles size={16} /> Sync Dialogue
+                  </button>
+                  <button
+                    onClick={addPage}
+                    className="yot-btn-primary flex items-center gap-2"
+                  >
+                    <Plus size={16} /> New Page
+                  </button>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-16">
-                {chapter.pages.map((page) => (
-                  <div key={page.id} className="space-y-8">
-                    <div className="flex justify-between items-center border-b border-yot-accent pb-4">
-                      <h3 className="text-2xl text-yot-primary">
-                        Page {page.pageNumber}
-                      </h3>
-                      <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-3">
-                          <Grid size={16} className="text-yot-secondary" />
-                          <select
-                            value={page.panelCount}
-                            onChange={(e) =>
-                              updatePage(page.id, parseInt(e.target.value))
-                            }
-                            className="bg-transparent border-none outline-none font-cinzel font-black text-xs uppercase tracking-widest text-yot-primary"
+              {chapter.pages.length > 0 && (
+                <div className="grid grid-cols-1 gap-16 w-full">
+                  {chapter.pages.map((page) => (
+                    <div key={page.id} className="space-y-8">
+                      <div className="flex justify-between items-center border-b border-yot-accent pb-4">
+                        <div className="flex items-center gap-4">
+                          <h3 className="text-2xl text-yot-primary">
+                            Page {page.pageNumber}
+                          </h3>
+                          <div className="flex items-center gap-2 text-xs text-slate-500">
+                            {page.panels.length} panel
+                            {page.panels.length !== 1 ? 's' : ''}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => addPanelToPage(page.id)}
+                            className="px-3 py-1 bg-yot-secondary text-white rounded text-xs font-bold hover:bg-yot-primary transition-colors flex items-center gap-1"
+                            title="Add Panel"
                           >
-                            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-                              <option key={n} value={n}>
-                                {n} Panels
-                              </option>
-                            ))}
-                          </select>
+                            <Plus size={14} /> Add Panel
+                          </button>
+                          <button
+                            onClick={() => setPageToDelete(page.id)}
+                            className="px-3 py-1 border border-red-400 text-red-500 rounded text-xs font-bold hover:bg-red-50 transition-colors flex items-center gap-1"
+                            title="Delete Page"
+                          >
+                            <Trash2 size={14} /> Delete
+                          </button>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Manga Page Thumbnail */}
-                    <div className="manga-page-container aspect-[1/1.414] bg-white border-8 border-yot-dark shadow-2xl relative overflow-hidden group/page">
-                      {page.panels.map((panel, idx) => (
-                        <StoryboardPanel
-                          key={panel.id}
-                          pageId={page.id}
-                          panel={panel}
-                          idx={idx}
-                          chapter={chapter}
-                          updatePanel={updatePanel}
-                          updatePanelLayout={updatePanelLayout}
-                          addBubbleToPanel={addBubbleToPanel}
-                          updateBubble={updateBubble}
-                          deleteBubble={deleteBubble}
-                          maxZIndex={maxZIndex}
-                          setMaxZIndex={setMaxZIndex}
-                          otherPanels={page.panels.filter(
-                            (p) => p.id !== panel.id,
-                          )}
-                        />
-                      ))}
-
-                      {/* Add/Clear Panel Buttons Overlay */}
-                      <div className="absolute top-4 right-4 z-50 flex flex-col gap-2 opacity-0 group-hover/page:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => addPanelToPage(page.id)}
-                          className="w-12 h-12 bg-yot-primary text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
-                          title="Add Panel to Page"
-                        >
-                          <Plus size={24} />
-                        </button>
-                        <button
-                          onClick={() => clearPage(page.id)}
-                          className="w-12 h-12 bg-red-500 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
-                          title="Clear Page"
-                        >
-                          <Trash2 size={24} />
-                        </button>
+                      {/* Manga Page Thumbnail - Larger */}
+                      <div
+                        className="manga-page-container bg-white border-8 border-yot-dark shadow-2xl relative z-0 overflow-hidden group/page"
+                        style={{
+                          width: '100%',
+                          aspectRatio: '1/1.414',
+                          minHeight: '1800px',
+                        }}
+                      >
+                        {page.panels.map((panel, idx) => (
+                          <StoryboardPanel
+                            key={panel.id}
+                            pageId={page.id}
+                            panel={panel}
+                            idx={idx}
+                            chapter={chapter}
+                            updatePanel={updatePanel}
+                            updatePanelLayout={updatePanelLayout}
+                            addBubbleToPanel={addBubbleToPanel}
+                            updateBubble={updateBubble}
+                            deleteBubble={deleteBubble}
+                            deletePanel={deletePanel}
+                            maxZIndex={maxZIndex}
+                            setMaxZIndex={setMaxZIndex}
+                            setViewingImage={setViewingImage}
+                            otherPanels={page.panels.filter(
+                              (p) => p.id !== panel.id,
+                            )}
+                          />
+                        ))}
                       </div>
                     </div>
-                    <div className="flex justify-end">
-                      <button
-                        onClick={() => setPageToDelete(page.id)}
-                        className="text-slate-300 hover:text-red-500 flex items-center gap-2 text-xs font-black uppercase tracking-widest transition-colors"
-                      >
-                        <Trash2 size={14} /> Delete Page
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
 
               {chapter.pages.length === 0 && (
-                <div className="yot-card py-32 text-center">
+                <div className="yot-card py-32 text-center flex flex-col items-center">
                   <Layout size={64} className="text-yot-accent mx-auto mb-6" />
-                  <p className="text-xl text-slate-400 font-light italic">
-                    Your storyboard is empty. Create your first page to start
-                    layouting.
+                  <p className="text-xl text-slate-400 font-light italic mb-6">
+                    Your storyboard is empty. Sync from dialogue or create a
+                    page manually.
                   </p>
+                  <button
+                    onClick={syncStoryboard}
+                    className="yot-btn-primary flex items-center gap-2"
+                  >
+                    <Sparkles size={16} /> Auto-Generate from Dialogue
+                  </button>
                 </div>
               )}
             </motion.div>
           )}
         </AnimatePresence>
       </main>
+
+      {/* Image Viewer Lightbox Modal */}
+      <AnimatePresence>
+        {viewingImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setViewingImage(null)}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-yot-dark/90 backdrop-blur-md cursor-zoom-out"
+          >
+            <img
+              src={viewingImage}
+              className="max-w-full max-h-full object-contain shadow-2xl rounded-lg"
+              alt="Reference Full"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Confirmation Modal */}
       <AnimatePresence>

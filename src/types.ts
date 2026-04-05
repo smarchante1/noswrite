@@ -14,6 +14,8 @@ export interface Dialogue {
   id: string;
   characterId: string;
   text: string;
+  pageNumber?: number; // Optional page assignment
+  panelNumber?: number; // Optional panel assignment within page
 }
 
 export interface Beat {
@@ -45,6 +47,7 @@ export interface Panel {
   id: string;
   composition: string;
   bubbles: Bubble[];
+  referenceImage?: string;
   layoutData: {
     x: number;
     y: number;
