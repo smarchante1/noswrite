@@ -1029,12 +1029,16 @@ export default function App() {
   };
 
   const handleCloudPush = async () => {
-    if (!syncUrl)
-      return alert('Please configure a Sync Server URL in Settings first.');
     setIsSyncing(true);
     try {
-      let cleanUrl = syncUrl.trim();
-      if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+      let cleanUrl = syncUrl.trim().replace(/[<>]/g, '');
+      if (!cleanUrl) {
+        cleanUrl = window.location.origin + '/api/sync';
+      } else if (
+        !cleanUrl.startsWith('http://') &&
+        !cleanUrl.startsWith('https://') &&
+        !cleanUrl.startsWith('/')
+      ) {
         cleanUrl = 'http://' + cleanUrl;
       }
 
@@ -1046,19 +1050,32 @@ export default function App() {
       if (!res.ok) throw new Error(await res.text());
       alert('Successfully pushed project to local sync server!');
     } catch (err: any) {
-      alert('Failed to push to sync server: ' + err.message);
+      if (
+        err.message?.includes('Failed to fetch') ||
+        err.message?.includes('NetworkError')
+      ) {
+        alert(
+          "Network Error: Could not reach the server.\n\n1. Check that your IP is exactly correct.\n2. Ensure your host computer's firewall allows network traffic on port 5173.",
+        );
+      } else {
+        alert('Failed to push to sync server: ' + err.message);
+      }
     } finally {
       setIsSyncing(false);
     }
   };
 
   const handleCloudPull = async () => {
-    if (!syncUrl)
-      return alert('Please configure a Sync Server URL in Settings first.');
     setIsSyncing(true);
     try {
-      let cleanUrl = syncUrl.trim();
-      if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+      let cleanUrl = syncUrl.trim().replace(/[<>]/g, '');
+      if (!cleanUrl) {
+        cleanUrl = window.location.origin + '/api/sync';
+      } else if (
+        !cleanUrl.startsWith('http://') &&
+        !cleanUrl.startsWith('https://') &&
+        !cleanUrl.startsWith('/')
+      ) {
         cleanUrl = 'http://' + cleanUrl;
       }
 
@@ -1080,7 +1097,16 @@ export default function App() {
         throw new Error('Invalid project file format received.');
       }
     } catch (err: any) {
-      alert('Failed to pull from sync server: ' + err.message);
+      if (
+        err.message?.includes('Failed to fetch') ||
+        err.message?.includes('NetworkError')
+      ) {
+        alert(
+          "Network Error: Could not reach the server.\n\n1. Check that your IP is exactly correct.\n2. Ensure your host computer's firewall allows network traffic on port 5173.",
+        );
+      } else {
+        alert('Failed to pull from sync server: ' + err.message);
+      }
     } finally {
       setIsSyncing(false);
     }
@@ -2024,27 +2050,25 @@ export default function App() {
             >
               <Settings size={20} />
             </button>
-            {syncUrl && (
-              <div className="flex bg-white/10 rounded-xl overflow-hidden backdrop-blur-sm border border-white/20">
-                <button
-                  onClick={handleCloudPull}
-                  disabled={isSyncing}
-                  className={`px-4 py-2 text-white transition-colors flex items-center gap-2 ${isSyncing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/20'}`}
-                  title="Pull from Cloud"
-                >
-                  <CloudDownload size={16} />
-                </button>
-                <div className="w-px bg-white/20" />
-                <button
-                  onClick={handleCloudPush}
-                  disabled={isSyncing}
-                  className={`px-4 py-2 text-white transition-colors flex items-center gap-2 ${isSyncing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/20'}`}
-                  title="Push to Cloud"
-                >
-                  <CloudUpload size={16} />
-                </button>
-              </div>
-            )}
+            <div className="flex bg-white/10 rounded-xl overflow-hidden backdrop-blur-sm border border-white/20">
+              <button
+                onClick={handleCloudPull}
+                disabled={isSyncing}
+                className={`px-4 py-2 text-white transition-colors flex items-center gap-2 ${isSyncing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/20'}`}
+                title="Pull from Local Network"
+              >
+                <CloudDownload size={16} />
+              </button>
+              <div className="w-px bg-white/20" />
+              <button
+                onClick={handleCloudPush}
+                disabled={isSyncing}
+                className={`px-4 py-2 text-white transition-colors flex items-center gap-2 ${isSyncing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/20'}`}
+                title="Push to Local Network"
+              >
+                <CloudUpload size={16} />
+              </button>
+            </div>
             <button
               onClick={handleSave}
               className="yot-btn-outline !border-white !text-white hover:!bg-white hover:!text-yot-dark flex items-center justify-center gap-2 w-28 transition-all"
@@ -2949,7 +2973,7 @@ export default function App() {
               <div className="space-y-4 pt-2">
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
-                    Sync Server URL (Local Network)
+                    Sync Server URL (Leave blank if on this computer)
                   </label>
                   <input
                     value={syncUrl}

@@ -7,7 +7,11 @@ import { defineConfig, loadEnv } from 'vite';
 const localSyncPlugin = () => ({
   name: 'local-sync-plugin',
   configureServer(server) {
-    server.middlewares.use('/api/sync', (req, res, next) => {
+    server.middlewares.use((req, res, next) => {
+      if (!req.url?.includes('/api/sync')) {
+        return next();
+      }
+
       const dbPath = path.resolve(process.cwd(), 'noswrite-cloud.json');
 
       // Allow access from any computer on your Wi-Fi
@@ -16,7 +20,10 @@ const localSyncPlugin = () => ({
         'Access-Control-Allow-Methods',
         'GET, PUT, POST, OPTIONS, DELETE',
       );
-      res.setHeader('Access-Control-Allow-Headers', '*');
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Accept, Origin, X-Requested-With',
+      );
 
       if (req.method === 'OPTIONS') {
         res.statusCode = 200;
@@ -41,15 +48,21 @@ const localSyncPlugin = () => ({
           chunks.push(Buffer.from(chunk));
         });
         req.on('end', () => {
-          const body = Buffer.concat(chunks);
-          fs.writeFileSync(dbPath, body);
-          res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({ success: true }));
+          try {
+            const body = Buffer.concat(chunks);
+            fs.writeFileSync(dbPath, body);
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ success: true }));
+          } catch (err) {
+            res.statusCode = 500;
+            res.end(JSON.stringify({ error: String(err) }));
+          }
         });
         return;
       }
 
-      next();
+      res.statusCode = 405;
+      res.end('Method Not Allowed');
     });
   },
 });
