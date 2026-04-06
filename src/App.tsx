@@ -24,6 +24,8 @@ import {
   Image as ImageIcon,
   Sparkles,
   ArrowRight,
+  CloudUpload,
+  CloudDownload,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -875,10 +877,20 @@ export default function App() {
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
+  const [showSettings, setShowSettings] = useState(false);
+  const [syncUrl, setSyncUrl] = useState(() => localStorage.getItem('noswrite-sync-url') || '');
+  const [syncToken, setSyncToken] = useState(() => localStorage.getItem('noswrite-sync-token') || '');
+  const [isSyncing, setIsSyncing] = useState(false);
+
   useEffect(() => {
     localStorage.setItem('noswrite-chapters', JSON.stringify(chapters));
     localStorage.setItem('noswrite-active-chapter-id', activeChapterId);
   }, [chapters, activeChapterId]);
+
+  useEffect(() => {
+    localStorage.setItem('noswrite-sync-url', syncUrl);
+    localStorage.setItem('noswrite-sync-token', syncToken);
+  }, [syncUrl, syncToken]);
 
   const handleSave = () => {
     setIsSaving(true);
@@ -1014,6 +1026,59 @@ export default function App() {
     setChapters((prev) => [...prev, newChapter]);
     setActiveChapterId(newChapter.id);
     setIsChapterListOpen(false);
+  };
+
+  const handleCloudPush = async () => {
+    if (!syncUrl) return alert('Please configure a Sync URL in Settings first.');
+    setIsSyncing(true);
+    try {
+      const res = await fetch(syncUrl, {
+        method: 'PUT', // or POST depending on your backend
+        headers: {
+          'Content-Type': 'application/json',
+          ...(syncToken ? { Authorization: `Bearer ${syncToken}` } : {}),
+          ...(syncToken ? { 'X-Access-Key': syncToken, 'X-Master-Key': syncToken } : {}), // For JSONBin.io support
+        },
+        body: JSON.stringify(chapters),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      alert('Successfully pushed project to cloud!');
+    } catch (err: any) {
+      alert('Failed to push to cloud: ' + err.message);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleCloudPull = async () => {
+    if (!syncUrl) return alert('Please configure a Sync URL in Settings first.');
+    setIsSyncing(true);
+    try {
+      const res = await fetch(syncUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(syncToken ? { Authorization: `Bearer ${syncToken}` } : {}),
+          ...(syncToken ? { 'X-Access-Key': syncToken, 'X-Master-Key': syncToken } : {}),
+        },
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      // Supports raw arrays or wrapper objects (like { record: [...] } used by JSONBin)
+      const parsed = Array.isArray(data) ? data : data.record || data.data || data;
+
+      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].id) {
+        setChapters(parsed);
+        setActiveChapterId(parsed[0].id);
+        alert('Project successfully synced from cloud!');
+      } else {
+        throw new Error('Invalid project file format received.');
+      }
+    } catch (err: any) {
+      alert('Failed to pull from cloud: ' + err.message);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const deleteChapter = (id: string) => {
@@ -1947,6 +2012,24 @@ export default function App() {
             />
           </div>
           <div className="flex gap-4">
+          <button
+            onClick={() => setShowSettings(true)}
+            className="p-2 text-white/70 hover:text-white transition-colors"
+            title="Sync Settings"
+          >
+            <Settings size={20} />
+          </button>
+          {syncUrl && (
+            <div className="flex bg-white/10 rounded-xl overflow-hidden backdrop-blur-sm border border-white/20">
+              <button onClick={handleCloudPull} disabled={isSyncing} className={`px-4 py-2 text-white transition-colors flex items-center gap-2 ${isSyncing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/20'}`} title="Pull from Cloud">
+                <CloudDownload size={16} />
+              </button>
+              <div className="w-px bg-white/20" />
+              <button onClick={handleCloudPush} disabled={isSyncing} className={`px-4 py-2 text-white transition-colors flex items-center gap-2 ${isSyncing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/20'}`} title="Push to Cloud">
+                <CloudUpload size={16} />
+              </button>
+            </div>
+          )}
             <button
               onClick={handleSave}
               className="yot-btn-outline !border-white !text-white hover:!bg-white hover:!text-yot-dark flex items-center justify-center gap-2 w-28 transition-all"
@@ -2824,6 +2907,61 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+  {/* Settings Modal */}
+  <AnimatePresence>
+    {showSettings && (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-yot-dark/80 backdrop-blur-sm"
+      >
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.9, opacity: 0 }}
+          className="yot-card p-12 max-w-md w-full space-y-6"
+        >
+          <h3 className="text-2xl text-yot-primary flex items-center gap-2">
+            <Settings size={24} /> Sync Settings
+          </h3>
+          <p className="text-slate-500 font-light text-sm leading-relaxed">
+            Configure a generic REST API endpoint to sync your data across devices. Works flawlessly with free tiers of <strong className="text-yot-secondary">JSONBin.io</strong>, <strong className="text-yot-secondary">Supabase</strong>, or your own simple Express server!
+          </p>
+          <div className="space-y-4 pt-2">
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">API Endpoint URL (PUT/GET)</label>
+              <input
+                value={syncUrl}
+                onChange={e => setSyncUrl(e.target.value)}
+                placeholder="e.g. https://api.jsonbin.io/v3/b/YOUR_BIN_ID"
+                className="w-full p-3 bg-yot-bg border border-yot-accent rounded-lg outline-none text-slate-600 focus:border-yot-secondary"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">API Key / Token (Optional)</label>
+              <input
+                type="password"
+                value={syncToken}
+                onChange={e => setSyncToken(e.target.value)}
+                placeholder="Your secret key..."
+                className="w-full p-3 bg-yot-bg border border-yot-accent rounded-lg outline-none text-slate-600 focus:border-yot-secondary"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-4 pt-6 border-t border-yot-accent mt-6">
+            <button
+              onClick={() => setShowSettings(false)}
+              className="px-6 py-3 rounded-xl bg-yot-secondary text-white text-xs font-black uppercase tracking-widest hover:bg-yot-primary transition-colors"
+            >
+              Save & Close
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    )}
+  </AnimatePresence>
 
       {/* Footer */}
       <footer className="p-12 bg-yot-dark text-center">
