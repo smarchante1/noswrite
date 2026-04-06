@@ -1033,7 +1033,10 @@ export default function App() {
       return alert('Please configure a Sync Server URL in Settings first.');
     setIsSyncing(true);
     try {
-      const cleanUrl = syncUrl.trim();
+      let cleanUrl = syncUrl.trim();
+      if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+        cleanUrl = 'http://' + cleanUrl;
+      }
 
       const res = await fetch(cleanUrl, {
         method: 'PUT',
@@ -1054,7 +1057,10 @@ export default function App() {
       return alert('Please configure a Sync Server URL in Settings first.');
     setIsSyncing(true);
     try {
-      const cleanUrl = syncUrl.trim();
+      let cleanUrl = syncUrl.trim();
+      if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+        cleanUrl = 'http://' + cleanUrl;
+      }
 
       const res = await fetch(cleanUrl, {
         method: 'GET',

@@ -8,15 +8,15 @@ const localSyncPlugin = () => ({
   name: 'local-sync-plugin',
   configureServer(server) {
     server.middlewares.use('/api/sync', (req, res, next) => {
-      const dbPath = path.resolve(__dirname, 'noswrite-cloud.json');
+      const dbPath = path.resolve(process.cwd(), 'noswrite-cloud.json');
 
       // Allow access from any computer on your Wi-Fi
       res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, OPTIONS');
       res.setHeader(
-        'Access-Control-Allow-Headers',
-        'Content-Type, Authorization, X-Master-Key',
+        'Access-Control-Allow-Methods',
+        'GET, PUT, POST, OPTIONS, DELETE',
       );
+      res.setHeader('Access-Control-Allow-Headers', '*');
 
       if (req.method === 'OPTIONS') {
         res.statusCode = 200;
@@ -36,11 +36,12 @@ const localSyncPlugin = () => ({
       }
 
       if (req.method === 'PUT') {
-        let body = '';
+        const chunks: Buffer[] = [];
         req.on('data', (chunk) => {
-          body += chunk.toString();
+          chunks.push(Buffer.from(chunk));
         });
         req.on('end', () => {
+          const body = Buffer.concat(chunks);
           fs.writeFileSync(dbPath, body);
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify({ success: true }));
