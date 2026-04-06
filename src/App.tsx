@@ -1042,6 +1042,10 @@ export default function App() {
         cleanUrl = 'http://' + cleanUrl;
       }
 
+      if (!cleanUrl.includes('/api/sync')) {
+        cleanUrl = cleanUrl.replace(/\/$/, '') + '/api/sync';
+      }
+
       const res = await fetch(cleanUrl, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -1077,6 +1081,10 @@ export default function App() {
         !cleanUrl.startsWith('/')
       ) {
         cleanUrl = 'http://' + cleanUrl;
+      }
+
+      if (!cleanUrl.includes('/api/sync')) {
+        cleanUrl = cleanUrl.replace(/\/$/, '') + '/api/sync';
       }
 
       const res = await fetch(cleanUrl, {
